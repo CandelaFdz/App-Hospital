@@ -13,7 +13,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
   const [mostrarProtocolo, setMostrarProtocolo] = useState<boolean>(false);
   const [modoAgregar, setModoAgregar] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
-  const [tipoAgregar, setTipoAgregar] = useState<'protocolo' | 'diagnostico' | 'especialidad' | 'usuario'>('protocolo');
+  const [tipoAgregar, setTipoAgregar] = useState<'protocolo' | 'diagnostico' | 'diagnostico_exito' | 'especialidad' | 'usuario'>('protocolo');
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -56,6 +56,15 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
     setMostrarProtocolo(false);
     setModoAgregar(false);
   };
+  const handleGuardarSubmit = () => {
+    if (tipoAgregar === 'diagnostico') {
+      // si se guarda un diagnóstico, pasa a la pantalla de éxito
+      setTipoAgregar('diagnostico_exito');
+    } else {
+      // si guarda un protocolo u otra cosa, volvemos al inicio
+      handleVolver();
+    }
+  };
 
   return (
     <div className="app-wrapper">
@@ -70,13 +79,46 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
         
         {modoAgregar ? (
          <section className="protocol-form-section">
+          {tipoAgregar !== 'diagnostico_exito' && (
             <button className="btn" onClick={handleVolver}>
-              ⬅ Volver al inicio
+              ⬅ Cancelar y volver
             </button>
-            {(tipoAgregar === 'protocolo' || tipoAgregar === 'diagnostico') ? (
+            )}
+            {tipoAgregar === 'diagnostico_exito' ? (
+              
+              <div className="form-container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+                <h2 className="form-title" >
+                  ¡Diagnóstico guardado con éxito!
+                </h2>
+                <p style={{ color: 'var(--gris)', marginBottom: '1rem' }}>
+                  ¿Desea redactar y asociar un protocolo a este diagnóstico ahora mismo?
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
+                  <button className="btn-guardar" style={{ width: '100%', maxWidth: '300px' }} onClick={() => setTipoAgregar('protocolo')}>
+                    Sí, agregar protocolo
+                  </button>
+                  <button className="btn" style={{ width: '100%', maxWidth: '300px'}} onClick={handleVolver}>
+                    No, volver al inicio
+                  </button>
+                </div>
+              </div>
+
+            ) : (tipoAgregar === 'protocolo' || tipoAgregar === 'diagnostico') ? (
             <div className="form-container">
               <h2 className="form-title">Nuevo {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}
               </h2>
+
+              {tipoAgregar === 'protocolo' && (
+                  <div className="input-group">
+                    <label>Asociar a Diagnóstico Existente</label>
+                    <select className="form-select">
+                      <option value="">Seleccione un diagnóstico...</option>
+                      <option value="1">Crisis Asmática</option>
+                      <option value="2">ACV Isquémico</option>
+                      <option value="3">Infarto Agudo de Miocardio</option>
+                    </select>
+                  </div>
+                )}
               
               <div className="input-group">
                 <label>Título</label>
@@ -109,7 +151,9 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
                   </div>
                 )}
 
-              <button className="btn-guardar">Guardar {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}</button>
+              <button className="btn-guardar" onClick={handleGuardarSubmit}>
+                  Guardar {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}
+                </button>
             </div>
             ) : (
               <div className="form-container" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
@@ -187,11 +231,13 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
           
         )}
       </main>
+
+      {!modoAgregar && (
       <div className="fab-container">
         {isMenuOpen && (
           <div className="fab-menu">
-            <button className="fab-item" onClick={handleAbrirAgregarProtocolo}>Agregar protocolo</button>
             <button className="fab-item" onClick={handleAbrirAgregarDiagnostico}>Agregar diagnostico</button>
+            <button className="fab-item" onClick={handleAbrirAgregarProtocolo}>Agregar protocolo</button>
             <button className="fab-item" onClick={handleAbrirAgregarEspecialidad}>Agregar especialidad</button>
             <button className="fab-item" onClick={handleAbrirAgregarUsuario}>Gestion de usuario</button>
           </div>
@@ -204,6 +250,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
           +
         </button>
       </div>
+      )}
     </div>
   );
 };

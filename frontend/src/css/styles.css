@@ -366,3 +366,27 @@ body {
 .btn-guardar:active {
   background-color: var(--verde-oscuro);
 }
+
+.form-select {
+  width: 100%;
+  padding: 0.85rem;
+  border: 2px solid var(--borde-claro);
+  border-radius: 12px;
+  background-color: var(--blanco-puro);
+  color: var(--texto-oscuro);
+  font-size: 1rem;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--celeste, #53B5D2);
+}
+
+.form-select option {
+  color: var(--texto-oscuro, #1e293b);
+  background-color: var(--blanco-puro, #ffffff);
+}

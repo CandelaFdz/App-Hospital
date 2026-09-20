@@ -15,8 +15,8 @@ export default defineConfig({
         theme_color: "#0b5cab",
         background_color: "#ffffff",
         display: "standalone",
-        start_url: "/",
-        scope: "/"
+        start_url: "/App-Hospital/",
+        scope: "/App-Hospital/"
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],

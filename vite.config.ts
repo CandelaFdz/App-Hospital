@@ -20,7 +20,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        navigateFallback: "/index.html",
+        navigateFallback: "/App-Hospital/index.html",
         cleanupOutdatedCaches: true,
       },
       devOptions: {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../css/styles.css';
 import { Header } from './Header';
 import { BuscadorInicio } from './BuscadorInicio';
@@ -15,13 +15,33 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
   const [tipoFormulario, setTipoFormulario] = useState<'protocolo' | 'diagnostico' | 'especialidad' | 'usuario'>('protocolo');
   
   const [protocoloSeleccionado, setProtocoloSeleccionado] = useState<any>(null);
-  const [tarjetas, setTarjetas] = useState<any[]>([
-    {
-      id: 'demo-1',
-      titulo: 'PROTOCOLO DEL MANEJO DE CRISIS ASMATICA EN LA URGENCIA',
-      subtitulo: 'subtitulo o breve descripción del protocolo'
-    }
-  ]);
+  const [tarjetas, setTarjetas] = useState<any[]>([]);
+
+  //esta temporalmente para probar la conexion y que no me de error el typiscript
+  useEffect(() => {
+    const cargarDatosBackend = async () => {
+      try {
+        // Hacemos ambas peticiones en paralelo (al mismo tiempo)
+        const [resProtocolos, resDiagnosticos] = await Promise.all([
+          fetch('http://localhost:3000/protocolos'),
+          fetch('http://localhost:3000/diagnosticos')
+        ]);
+
+        if (resProtocolos.ok && resDiagnosticos.ok) {
+          const dataProtocolos = await resProtocolos.json();
+          const dataDiagnosticos = await resDiagnosticos.json();
+          
+          const todoJunto = [...dataDiagnosticos, ...dataProtocolos];
+          
+          setTarjetas(todoJunto); 
+        }
+      } catch (error) {
+        console.error("Error al hacer el GET al backend:", error);
+      }
+    };
+
+    cargarDatosBackend();
+  }, []);
 
   const handleAbrirFormulario = (tipo: 'protocolo' | 'diagnostico' | 'especialidad' | 'usuario') => {
     setTipoFormulario(tipo);

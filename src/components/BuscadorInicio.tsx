@@ -7,6 +7,9 @@ interface BuscadorInicioProps {
 
 export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCardClick }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const tarjetasFiltradas = tarjetas.filter((tarjeta) =>
+    tarjeta.titulo.toLowerCase().includes(searchTerm.trim().toLowerCase())
+  );
 
   return (
     <>
@@ -15,10 +18,10 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
           <input
             type="text"
             className="search-input"
-            placeholder="Buscar diagnóstico o protocolo..."
+            placeholder="Buscar diagnóstico..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            aria-label="Buscar protocolos por diagnóstico"
+            aria-label="Buscar diagnósticos"
           />
           <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -28,17 +31,17 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
       </section>
 
       <section className="action-section">
-        {tarjetas.map((tarjeta) => (
-          <button 
+        {tarjetasFiltradas.map((tarjeta) => (
+          <button
             key={tarjeta.id}
-            className="protocol-card" 
+            className="protocol-card"
             onClick={() => onCardClick(tarjeta)}
             aria-label="Ir a la pantalla de protocolos"
             style={{ marginBottom: '1rem' }}
           >
             <div className="card-text">
               <h2>{tarjeta.titulo}</h2>
-              <p>{tarjeta.subtitulo}</p>
+              <p>{tarjeta.protocolo?.subtitulo || tarjeta.subtitulo || ''}</p>
             </div>
             <div className="card-arrow">➔</div>
           </button>

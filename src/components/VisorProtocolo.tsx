@@ -3,21 +3,76 @@ import React from 'react';
 interface VisorProtocoloProps {
   protocolo: any;
   onVolver: () => void;
+  onCrearProtocolo: () => void;
+  onEditarProtocolo: () => void;
+  onEditarDiagnostico: () => void;
 }
 
-export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({ protocolo, onVolver }) => {
+export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
+  protocolo,
+  onVolver,
+  onCrearProtocolo,
+  onEditarProtocolo,
+  onEditarDiagnostico
+}) => {
+  const protocoloAsociado = protocolo?.protocolo;
+  const imagenesDiagnostico = protocolo?.imagenes ?? (protocolo?.imagen ? [protocolo.imagen] : []);
+
   return (
     <section className="protocol-info-">
-      <button className="btn" onClick={onVolver}>
-        ⬅ Volver al inicio
-      </button>
+      <div className="visor-acciones">
+        <button className="btn" onClick={onVolver}>
+          ⬅ Volver al inicio
+        </button>
 
-     <div className="protocol-texto" >
-      <h2>{protocolo?.titulo || 'Título no disponible'}</h2>
-      <h3>{protocolo?.subtitulo || 'Subtítulo no disponible'}</h3>
-      <p>{protocolo?.desc || 'Cargando contenido del protocolo...'}</p>
+        <details className="editar-menu">
+          <summary>Editar</summary>
+          <div className="editar-menu-opciones">
+            {protocoloAsociado && (
+              <button className="btn" onClick={onEditarProtocolo}>
+                Editar protocolo
+              </button>
+            )}
+            <button className="btn" onClick={onEditarDiagnostico}>
+              Editar diagnóstico
+            </button>
+          </div>
+        </details>
       </div>
-      
+
+      <details className="diagnostico-detalle">
+        <summary>Ver detalle del diagnóstico</summary>
+        <div className="diagnostico-detalle-contenido">
+          <p>{protocolo?.desc || 'Detalle del diagnóstico no disponible'}</p>
+          {imagenesDiagnostico.length > 0 && (
+            <div className="diagnostico-imagenes">
+              {imagenesDiagnostico.map((imagen: string, indice: number) => (
+                <img key={`${imagen}-${indice}`} src={imagen} alt={`Imagen del diagnóstico ${protocolo?.titulo}`} />
+              ))}
+            </div>
+          )}
+        </div>
+      </details>
+
+      <div className="protocol-texto" >
+        {protocoloAsociado ? (
+          <>
+            <h2>Protocolo de actuación: {protocolo?.titulo}</h2>
+            <h3>{protocoloAsociado.subtitulo || 'Subtítulo no disponible'}</h3>
+            <p>{protocoloAsociado.desc || 'Contenido del protocolo no disponible'}</p>
+          </>
+        ) : (
+          <>
+            <h2>{protocolo?.titulo}</h2>
+            <p className="sin-protocolo-mensaje">Aún no se asoció un protocolo a este diagnóstico</p>
+            <button className="btn-crear-protocolo" onClick={onCrearProtocolo}>
+              Crear protocolo
+            </button>
+          </>
+        )}
+      </div>
+
+
       <div className="protocol-multi" >
         <h3>Imagenes o cuadros van aca con un subtitulo</h3>
       </div>

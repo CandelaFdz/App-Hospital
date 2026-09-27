@@ -5,6 +5,9 @@ import { BuscadorInicio } from './BuscadorInicio';
 import { VisorProtocolo } from './VisorProtocolo';
 import { FormularioCreacion } from './Formulario';
 import { MenuFlotante } from './MenuFlotante';
+import { GestionUsuarios } from './GestionUsuarios';
+import { FormularioUsuario } from './FormUsuarios';
+import { GestionEspecialidades } from './GestionEspecialidades';
 
 interface InicioProps {
   onNavigateToProtocols?: () => void;
@@ -12,19 +15,16 @@ interface InicioProps {
 
 export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
   const [vistaActual, setVistaActual] = useState<'inicio' | 'crear' | 'leer'>('inicio');
-  const [tipoFormulario, setTipoFormulario] = useState<'protocolo' | 'diagnostico' | 'especialidad' | 'usuario'>('protocolo');
-
+  const [tipoFormulario, setTipoFormulario] = useState<'protocolo' | 'diagnostico' | 'especialidad' | 'usuario' | 'crear_usuario'>('protocolo');
   const [protocoloSeleccionado, setProtocoloSeleccionado] = useState<any>(null);
   const [tarjetas, setTarjetas] = useState<any[]>([]);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [datosEdicion, setDatosEdicion] = useState<any>(null);
   const [versionDatos, setVersionDatos] = useState(0);
 
-  //esta temporalmente para probar la conexion y que no me de error el typiscript
   useEffect(() => {
     const cargarDatosBackend = async () => {
       try {
-        // Hacemos ambas peticiones en paralelo (al mismo tiempo)
         const [resProtocolos, resDiagnosticos] = await Promise.all([
           fetch('http://localhost:3000/protocolos'),
           fetch('http://localhost:3000/diagnosticos')
@@ -33,15 +33,15 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
         if (resProtocolos.ok && resDiagnosticos.ok) {
           const dataProtocolos = await resProtocolos.json();
           const dataDiagnosticos = await resDiagnosticos.json();
-
           const diagnosticosConProtocolo = dataDiagnosticos.map((diagnostico: { id: number }) => ({
             ...diagnostico,
             protocolo: dataProtocolos.find(
               (protocolo: { id_diagnostico: number }) => protocolo.id_diagnostico === diagnostico.id
             )
           }));
-
-          setTarjetas(diagnosticosConProtocolo);
+          
+          const todoJunto = [...diagnosticosConProtocolo, ...dataProtocolos];
+          setTarjetas(todoJunto); 
         }
       } catch (error) {
         console.error("Error al hacer el GET al backend:", error);
@@ -49,8 +49,9 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
     };
 
     cargarDatosBackend();
-  }, [versionDatos]);
+  }, [versionDatos]); 
 
+  
   const handleVolverDesdeFormulario = () => {
     setVersionDatos((version) => version + 1);
     setVistaActual('inicio');
@@ -75,23 +76,37 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
       <Header />
 
       <main className={`main-content ${vistaActual !== 'inicio' ? 'modo-lectura' : ''}`}>
-
+        
         {vistaActual === 'inicio' && (
           <BuscadorInicio tarjetas={tarjetas} onCardClick={handleCardClick} />
         )}
 
         {vistaActual === 'crear' && (
-          <FormularioCreacion
-            tipoInicial={tipoFormulario}
-            modoEdicion={modoEdicion}
-            datosIniciales={datosEdicion}
-            onVolver={handleVolverDesdeFormulario}
-          />
-)}
+          tipoFormulario === 'usuario' ? (
+            <GestionUsuarios 
+              onVolver={() => setVistaActual('inicio')}
+              onCrearUsuario={() => setTipoFormulario('crear_usuario')} 
+            />
+          ) : tipoFormulario === 'crear_usuario' ? (
+            <FormularioUsuario 
+              onVolver={() => setTipoFormulario('usuario')} 
+            />
+          ) : tipoFormulario === 'especialidad' ? (
+            <GestionEspecialidades onVolver={() => setVistaActual('inicio')} />
+          ) : (
+            <FormularioCreacion 
+              tipoInicial={tipoFormulario}
+              modoEdicion={modoEdicion}
+              datosIniciales={datosEdicion}
+              onVolver={handleVolverDesdeFormulario}
+            />
+          )
+        )}
 
         {vistaActual === 'leer' && (
-          <VisorProtocolo
-            protocolo={protocoloSeleccionado}
+          <VisorProtocolo 
+            protocolo={protocoloSeleccionado} 
+            
             onEditarProtocolo={() => {
               setTipoFormulario('protocolo');
               setModoEdicion(true);
@@ -113,10 +128,11 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
               setDatosEdicion(null);
               setVistaActual('crear');
             }}
+
             onVolver={() => {
               setVistaActual('inicio');
               setProtocoloSeleccionado(null);
-            }}
+            }} 
           />
         )}
 

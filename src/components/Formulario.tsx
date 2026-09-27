@@ -1,42 +1,76 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+
+interface Diagnostico {
+  id: number;
+  titulo: string;
+}
 
 interface FormularioCreacionProps {
   tipoInicial: 'protocolo' | 'diagnostico' | 'especialidad' | 'usuario';
+  modoEdicion?: boolean;
+  datosIniciales?: any;
   onVolver: () => void;
 }
 
-export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({ tipoInicial, onVolver }) => {
+export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
+  tipoInicial,
+  modoEdicion = false,
+  datosIniciales,
+  onVolver
+}) => {
   const [tipoAgregar, setTipoAgregar] = useState<string>(tipoInicial);
-  
+
   // Estados para capturar los datos reales que irán al backend
-  const [inputTitulo, setInputTitulo] = useState('');
-  const [inputSubtitulo, setInputSubtitulo] = useState('');
-  const [inputDesc, setInputDesc] = useState('');
-  const [diagnosticoId, setDiagnosticoId] = useState('');
+  const [inputTitulo, setInputTitulo] = useState(datosIniciales?.titulo ?? '');
+  const [inputSubtitulo, setInputSubtitulo] = useState(datosIniciales?.subtitulo ?? '');
+  const [inputDesc, setInputDesc] = useState(datosIniciales?.desc ?? '');
+  const [diagnosticoId, setDiagnosticoId] = useState(
+    datosIniciales?.id_diagnostico ? String(datosIniciales.id_diagnostico) : ''
+  );
+  const [diagnosticoBusqueda, setDiagnosticoBusqueda] = useState(datosIniciales?.diagnosticoTitulo ?? '');
+  const [diagnosticos, setDiagnosticos] = useState<Diagnostico[]>([]);
+
+  useEffect(() => {
+    if (tipoAgregar !== 'protocolo') return;
+
+    const cargarDiagnosticos = async () => {
+      try {
+        const response = await fetch('http://localhost:3000/diagnosticos');
+        if (!response.ok) throw new Error('No se pudieron cargar los diagnósticos');
+
+        setDiagnosticos(await response.json());
+      } catch (error) {
+        console.error('Error al cargar los diagnósticos:', error);
+      }
+    };
+
+    cargarDiagnosticos();
+  }, [tipoAgregar]);
 
   const handleGuardarSubmit = async () => {
-    try {
-      // 1. Definimos la ruta de NestJS
-      const endpoint = tipoAgregar === 'diagnostico' 
-        ? 'http://localhost:3000/diagnosticos' 
-        : 'http://localhost:3000/protocolos';
+    if (tipoAgregar === 'protocolo' && !diagnosticoId) {
+      console.error('Debe seleccionar un diagnóstico para crear el protocolo');
+      return;
+    }
 
-      // 2. Estructuramos el DTO para el backend
+    try {
       const bodyData = tipoAgregar === 'diagnostico'
-        ? { 
-            titulo: inputTitulo, 
-            desc: inputDesc 
+        ? {
+            titulo: inputTitulo,
+            desc: inputDesc
           }
-        : { 
-            titulo: inputTitulo, 
-            subtitulo: inputSubtitulo, 
+        : {
+            subtitulo: inputSubtitulo,
             desc: inputDesc,
-            diagnosticoId: diagnosticoId ? parseInt(diagnosticoId) : undefined
+            id_diagnostico: Number(diagnosticoId)
           };
 
-      // 3. Petición real por la red (visible en la pestaña Network)
+      const recurso = tipoAgregar === 'diagnostico' ? 'diagnosticos' : 'protocolos';
+      const endpoint = modoEdicion
+        ? `http://localhost:3000/${recurso}/${datosIniciales.id}`
+        : `http://localhost:3000/${recurso}`;
       const response = await fetch(endpoint, {
-        method: 'POST',
+        method: modoEdicion ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -49,8 +83,9 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({ tipoInic
         setInputSubtitulo('');
         setInputDesc('');
         setDiagnosticoId('');
+        setDiagnosticoBusqueda('');
 
-        if (tipoAgregar === 'diagnostico') {
+        if (!modoEdicion && tipoAgregar === 'diagnostico') {
           setTipoAgregar('diagnostico_exito');
         } else {
           onVolver();
@@ -68,7 +103,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({ tipoInic
       {tipoAgregar !== 'diagnostico_exito' && (
         <button className="btn" onClick={onVolver}>⬅ Cancelar y volver</button>
       )}
-      
+
       {tipoAgregar === 'diagnostico_exito' ? (
         <div className="form-container" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
           <h2 className="form-title">¡Diagnóstico guardado con éxito!</h2>
@@ -85,33 +120,50 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({ tipoInic
 
       ) : (tipoAgregar === 'protocolo' || tipoAgregar === 'diagnostico') ? (
         <div className="form-container">
-          <h2 className="form-title">Nuevo {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}</h2>
+          <h2 className="form-title">
+            {modoEdicion ? 'Editar' : 'Nuevo'} {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}
+          </h2>
 
           {tipoAgregar === 'protocolo' && (
             <div className="input-group">
               <label>Asociar a Diagnóstico Existente</label>
-              <select 
-                className="form-select"
-                value={diagnosticoId}
-                onChange={(e) => setDiagnosticoId(e.target.value)}
-              >
-                <option value="">Seleccione un diagnóstico...</option>
-                <option value="1">Crisis Asmática</option>
-                <option value="2">ACV Isquémico</option>
-                <option value="3">Infarto Agudo de Miocardio</option>
-              </select>
+              <input
+                type="text"
+                className="form-input"
+                list="diagnosticos-disponibles"
+                placeholder="Escriba para buscar un diagnóstico..."
+                value={diagnosticoBusqueda}
+                onChange={(e) => {
+                  const busqueda = e.target.value;
+                  const diagnosticoSeleccionado = diagnosticos.find(
+                    (diagnostico) => diagnostico.titulo === busqueda
+                  );
+
+                  setDiagnosticoBusqueda(busqueda);
+                  setDiagnosticoId(diagnosticoSeleccionado ? String(diagnosticoSeleccionado.id) : '');
+                }}
+              />
+              <datalist id="diagnosticos-disponibles">
+                {diagnosticos.map((diagnostico) => (
+                  <option key={diagnostico.id} value={diagnostico.titulo} />
+                ))}
+              </datalist>
             </div>
           )}
-          
-          <div className="input-group">
-            <label>Título</label>
-            <input type="text" placeholder="Ej: Manejo de Crisis Asmática..." className="form-input" value={inputTitulo} onChange={(e) => setInputTitulo(e.target.value)} />
-          </div>
 
-          <div className="input-group">
-            <label>Subtítulo</label>
-            <input type="text" placeholder="Ej: Pasos a seguir en urgencias..." className="form-input" value={inputSubtitulo} onChange={(e) => setInputSubtitulo(e.target.value)} />
-          </div>
+          {tipoAgregar === 'diagnostico' && (
+            <div className="input-group">
+              <label>Título</label>
+              <input type="text" placeholder="Ej: Manejo de Crisis Asmática..." className="form-input" value={inputTitulo} onChange={(e) => setInputTitulo(e.target.value)} />
+            </div>
+          )}
+
+          {tipoAgregar === 'protocolo' && (
+            <div className="input-group">
+              <label>Subtítulo</label>
+              <input type="text" placeholder="Ej: Pasos a seguir en urgencias..." className="form-input" value={inputSubtitulo} onChange={(e) => setInputSubtitulo(e.target.value)} />
+            </div>
+          )}
 
           <div className="input-group">
             <label>Info</label>
@@ -122,7 +174,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({ tipoInic
             <label>Agregar Imagen</label>
             <input type="file" accept="image/*" className="form-file-input" />
           </div>
-          
+
           {tipoAgregar === 'diagnostico' && (
             <div className="input-group">
               <label>Etiquetas (Separadas por coma)</label>
@@ -131,7 +183,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({ tipoInic
           )}
 
           <button className="btn-guardar" onClick={handleGuardarSubmit}>
-            Guardar {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}
+            {modoEdicion ? 'Actualizar' : 'Guardar'} {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}
           </button>
         </div>
       ) : (

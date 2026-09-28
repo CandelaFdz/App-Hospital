@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 
 interface FormularioCreacionProps {
   tipoInicial: 'protocolo' | 'diagnostico' | 'especialidad' | 'usuario';
+  modoEdicion?: boolean;
+  datosIniciales?: any;
   onVolver: () => void;
 }
 

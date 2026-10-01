@@ -39,9 +39,8 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
               (protocolo: { id_diagnostico: number }) => protocolo.id_diagnostico === diagnostico.id
             )
           }));
-          
-          const todoJunto = [...diagnosticosConProtocolo, ...dataProtocolos];
-          setTarjetas(todoJunto); 
+
+          setTarjetas(diagnosticosConProtocolo);
         }
       } catch (error) {
         console.error("Error al hacer el GET al backend:", error);
@@ -49,9 +48,9 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
     };
 
     cargarDatosBackend();
-  }, [versionDatos]); 
+  }, [versionDatos]);
 
-  
+
   const handleVolverDesdeFormulario = () => {
     setVersionDatos((version) => version + 1);
     setVistaActual('inicio');
@@ -76,25 +75,25 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
       <Header />
 
       <main className={`main-content ${vistaActual !== 'inicio' ? 'modo-lectura' : ''}`}>
-        
+
         {vistaActual === 'inicio' && (
           <BuscadorInicio tarjetas={tarjetas} onCardClick={handleCardClick} />
         )}
 
         {vistaActual === 'crear' && (
           tipoFormulario === 'usuario' ? (
-            <GestionUsuarios 
+            <GestionUsuarios
               onVolver={() => setVistaActual('inicio')}
-              onCrearUsuario={() => setTipoFormulario('crear_usuario')} 
+              onCrearUsuario={() => setTipoFormulario('crear_usuario')}
             />
           ) : tipoFormulario === 'crear_usuario' ? (
-            <FormularioUsuario 
-              onVolver={() => setTipoFormulario('usuario')} 
+            <FormularioUsuario
+              onVolver={() => setTipoFormulario('usuario')}
             />
           ) : tipoFormulario === 'especialidad' ? (
             <GestionEspecialidades onVolver={() => setVistaActual('inicio')} />
           ) : (
-            <FormularioCreacion 
+            <FormularioCreacion
               tipoInicial={tipoFormulario}
               modoEdicion={modoEdicion}
               datosIniciales={datosEdicion}
@@ -104,9 +103,9 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
         )}
 
         {vistaActual === 'leer' && (
-          <VisorProtocolo 
-            protocolo={protocoloSeleccionado} 
-            
+          <VisorProtocolo
+            protocolo={protocoloSeleccionado}
+
             onEditarProtocolo={() => {
               setTipoFormulario('protocolo');
               setModoEdicion(true);
@@ -132,7 +131,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
             onVolver={() => {
               setVistaActual('inicio');
               setProtocoloSeleccionado(null);
-            }} 
+            }}
           />
         )}
 

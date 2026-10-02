@@ -153,7 +153,7 @@ body {
 
 .protocol-texto {
   background-color: var(--blanco);
-  margin: 1rem -1rem 0 -1rem; 
+  margin: 1rem -0.5rem 0 -0.5rem; 
   padding: 1.5rem;
   border-radius: 20px ; 
   flex: 1;
@@ -191,7 +191,7 @@ body {
 
 .protocol-multi {
   background-color: var(--celeste-suave);
-  margin: 1rem -1rem 0 -1.5rem; 
+  margin: 1rem -0.5rem 0 -0.5rem; 
   padding: 1rem;
   border-radius: 20px ; 
   flex: 1;
@@ -513,4 +513,110 @@ body {
 .titulo-en-linea .form-title {
   margin: 0; 
   flex: 1; 
+}
+
+.visor-acciones {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.editar-menu {
+  position: relative;
+}
+
+.editar-menu summary {
+  list-style: none;
+  padding: 0.55rem 1rem;
+  border: 1px solid var(--azul);
+  border-radius: 10px;
+  background-color: var(--azul);
+  color: var(--blanco-puro);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.editar-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.editar-menu summary::after {
+  content: '▾';
+  margin-left: 0.6rem;
+  font-size: 0.8rem;
+}
+
+.editar-menu[open] summary::after {
+  content: '▴';
+}
+
+.editar-menu summary:hover {
+  border-color: var(--azul-profundo);
+  background-color: var(--azul-profundo);
+}
+
+.editar-menu-opciones {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 190px;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  background-color: var(--blanco-puro);
+  border: 1px solid var(--borde-claro);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px var(--sombra-azul);
+}
+
+.editar-menu-opciones .btn {
+  width: 100%;
+  text-align: left;
+  border-radius: 7px;
+}
+
+.diagnostico-detalle {
+  display: block;
+  margin-top: 1rem;
+  background-color: var(--blanco-puro);
+  border: 1px solid var(--borde-claro);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px var(--sombra-azul);
+}
+
+.diagnostico-detalle summary {
+  padding: 1rem;
+  color: var(--azul-profundo);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.diagnostico-detalle-contenido {
+  padding: 0 1rem 1rem;
+}
+
+.diagnostico-detalle-contenido p {
+  margin: 0;
+  color: var(--texto-oscuro);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.diagnostico-imagenes {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.diagnostico-imagenes img {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  object-fit: contain;
+  border-radius: 8px;
 }

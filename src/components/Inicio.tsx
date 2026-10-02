@@ -8,6 +8,8 @@ import { MenuFlotante } from './MenuFlotante';
 import { GestionUsuarios } from './GestionUsuarios';
 import { FormularioUsuario } from './FormUsuarios';
 import { GestionEspecialidades } from './GestionEspecialidades';
+import { obtenerDiagnosticosConProtocolos } from '../db/protocolos-repository';
+import type { DiagnosticoConProtocolo } from '../db/types';
 
 interface InicioProps {
   onNavigateToProtocols?: () => void;
@@ -17,37 +19,21 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
   const [vistaActual, setVistaActual] = useState<'inicio' | 'crear' | 'leer'>('inicio');
   const [tipoFormulario, setTipoFormulario] = useState<'protocolo' | 'diagnostico' | 'especialidad' | 'usuario' | 'crear_usuario'>('protocolo');
   const [protocoloSeleccionado, setProtocoloSeleccionado] = useState<any>(null);
-  const [tarjetas, setTarjetas] = useState<any[]>([]);
+  const [tarjetas, setTarjetas] = useState<DiagnosticoConProtocolo[]>([]);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [datosEdicion, setDatosEdicion] = useState<any>(null);
   const [versionDatos, setVersionDatos] = useState(0);
 
   useEffect(() => {
-    const cargarDatosBackend = async () => {
+    const cargarDatosLocales = async () => {
       try {
-        const [resProtocolos, resDiagnosticos] = await Promise.all([
-          fetch('http://localhost:3000/protocolos'),
-          fetch('http://localhost:3000/diagnosticos')
-        ]);
-
-        if (resProtocolos.ok && resDiagnosticos.ok) {
-          const dataProtocolos = await resProtocolos.json();
-          const dataDiagnosticos = await resDiagnosticos.json();
-          const diagnosticosConProtocolo = dataDiagnosticos.map((diagnostico: { id: number }) => ({
-            ...diagnostico,
-            protocolo: dataProtocolos.find(
-              (protocolo: { id_diagnostico: number }) => protocolo.id_diagnostico === diagnostico.id
-            )
-          }));
-
-          setTarjetas(diagnosticosConProtocolo);
-        }
+        setTarjetas(await obtenerDiagnosticosConProtocolos());
       } catch (error) {
-        console.error("Error al hacer el GET al backend:", error);
+        console.error('Error al cargar protocolos y diagnósticos locales:', error);
       }
     };
 
-    cargarDatosBackend();
+    cargarDatosLocales();
   }, [versionDatos]);
 
 

@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { obtenerDiagnosticos } from '../db/protocolos-repository';
+import type { DiagnosticoLocal } from '../db/types';
 
 interface FormularioCreacionProps {
   tipoInicial: 'protocolo' | 'diagnostico' | 'especialidad' | 'usuario';
   modoEdicion?: boolean;
   datosIniciales?: any;
   onVolver: () => void;
-}
-
-interface DiagnosticoOption {
-  id: string | number;
-  titulo: string;
 }
 
 export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
@@ -23,7 +20,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
   const [inputSubtitulo, setInputSubtitulo] = useState('');
   const [inputDesc, setInputDesc] = useState('');
   const [diagnosticoId, setDiagnosticoId] = useState('');
-  const [diagnosticos, setDiagnosticos] = useState<DiagnosticoOption[]>([]);
+  const [diagnosticos, setDiagnosticos] = useState<DiagnosticoLocal[]>([]);
 
   useEffect(() => {
     setTipoAgregar(tipoInicial);
@@ -34,12 +31,11 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
   }, [tipoInicial, datosIniciales]);
 
   useEffect(() => {
-    if (tipoInicial !== 'protocolo') return;
-    fetch('http://localhost:3000/diagnosticos')
-      .then((response) => response.ok ? response.json() : Promise.reject(response.status))
-      .then((data: DiagnosticoOption[]) => setDiagnosticos(data))
-      .catch((error) => console.error('Error al cargar diagnósticos:', error));
-  }, [tipoInicial]);
+    if (tipoAgregar !== 'protocolo') return;
+    obtenerDiagnosticos()
+      .then(setDiagnosticos)
+      .catch((error) => console.error('Error al cargar diagnósticos locales:', error));
+  }, [tipoAgregar]);
 
   //La opción de guardar se comporta de forma distinta según el formulario esté en modo edición o no
   const handleGuardarSubmit = async () => {

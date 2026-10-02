@@ -35,13 +35,13 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
 
   useEffect(() => {
     if (tipoInicial !== 'protocolo') return;
-
     fetch('http://localhost:3000/diagnosticos')
       .then((response) => response.ok ? response.json() : Promise.reject(response.status))
       .then((data: DiagnosticoOption[]) => setDiagnosticos(data))
       .catch((error) => console.error('Error al cargar diagnósticos:', error));
   }, [tipoInicial]);
 
+  //La opción de guardar se comporta de forma distinta según el formulario esté en modo edición o no
   const handleGuardarSubmit = async () => {
     try {
       const recurso = tipoAgregar === 'diagnostico' ? 'diagnosticos' : 'protocolos';

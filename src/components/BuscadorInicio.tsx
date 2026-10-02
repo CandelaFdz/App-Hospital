@@ -8,7 +8,8 @@ interface BuscadorInicioProps {
 export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCardClick }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const tarjetasFiltradas = tarjetas.filter((tarjeta) =>
-    tarjeta.titulo.toLowerCase().includes(searchTerm.trim().toLowerCase())
+    tarjeta.titulo.toLowerCase().includes(searchTerm.trim().toLowerCase()) || //puede buscar por título
+    tarjeta.protocolo?.subtitulo.toLowerCase().includes((searchTerm.trim().toLowerCase())) //puede buscar por subtítulo (del protocolo)
   );
 
   return (

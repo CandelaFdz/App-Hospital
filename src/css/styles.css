@@ -142,7 +142,7 @@ body {
   border: 1px solid var(--borde-claro);
   background-color: var(--blanco-puro);
   color: var(--azul-profundo);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: border-color 0.2s ease;
 }
@@ -530,7 +530,7 @@ body {
 
 .editar-menu summary {
   list-style: none;
-  padding: 0.55rem 1rem;
+  padding: 0.45rem 1rem;
   border: 1px solid var(--azul);
   border-radius: 10px;
   background-color: var(--azul);
@@ -619,4 +619,51 @@ body {
   max-height: 360px;
   object-fit: contain;
   border-radius: 8px;
+}
+
+.contenido-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+.contenido-markdown th,
+.contenido-markdown td {
+  border: 1px solid var(--borde-claro);
+  padding: 0.75rem;
+  text-align: left;
+}
+
+.contenido-markdown th {
+  background-color: var(--celeste-suave);
+  color: var(--azul-profundo);
+  font-weight: 600;
+}
+
+.editor-wrapper {
+  background-color: var(--blanco-puro);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--borde-claro);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.editor-wrapper:focus-within {
+  border-color: var(--celeste);
+  box-shadow: 0 0 0 3px rgba(44, 86, 103, 0.15);
+}
+
+/* es para marcar que boton esta encendio: BORRAR SI NO FUNCIONA EN CELULAR*/
+.toastui-editor-defaultUI .toastui-editor-toolbar .toastui-editor-toolbar-group button.active {
+  background-color: var(--celeste-suave, #E2F1F6) !important;
+  color: var(--azul-profundo, #2C5667) !important;
+  border-radius: 4px 4px 0 0 !important;
+  box-shadow: inset 0 -3px 0 var(--azul-profundo, #2C5667) !important;
+}
+
+.toastui-editor-defaultUI .toastui-editor-toolbar .toastui-editor-toolbar-group button {
+  transition: all 0.2s ease;
 }

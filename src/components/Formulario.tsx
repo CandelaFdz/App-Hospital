@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Editor } from '@toast-ui/react-editor';
+import '@toast-ui/editor/dist/toastui-editor.css';
 
 interface FormularioCreacionProps {
-  tipoInicial: 'protocolo' | 'diagnostico' | 'especialidad' | 'usuario';
+  tipoInicial: 'protocolo' | 'diagnostico';
   modoEdicion?: boolean;
   datosIniciales?: any;
   onVolver: () => void;
@@ -21,15 +23,15 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
   const [tipoAgregar, setTipoAgregar] = useState<string>(tipoInicial);
   const [inputTitulo, setInputTitulo] = useState('');
   const [inputSubtitulo, setInputSubtitulo] = useState('');
-  const [inputDesc, setInputDesc] = useState('');
   const [diagnosticoId, setDiagnosticoId] = useState('');
   const [diagnosticos, setDiagnosticos] = useState<DiagnosticoOption[]>([]);
+
+  const editorRef = useRef<Editor>(null);
 
   useEffect(() => {
     setTipoAgregar(tipoInicial);
     setInputTitulo(datosIniciales?.titulo ?? datosIniciales?.diagnosticoTitulo ?? '');
     setInputSubtitulo(datosIniciales?.subtitulo ?? '');
-    setInputDesc(datosIniciales?.desc ?? '');
     setDiagnosticoId(String(datosIniciales?.id_diagnostico ?? ''));
   }, [tipoInicial, datosIniciales]);
 
@@ -44,12 +46,14 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
   //La opción de guardar se comporta de forma distinta según el formulario esté en modo edición o no
   const handleGuardarSubmit = async () => {
     try {
+      const markdownGenerado = editorRef.current?.getInstance().getMarkdown() || '';
+
       const recurso = tipoAgregar === 'diagnostico' ? 'diagnosticos' : 'protocolos';
       const id = modoEdicion ? `/${datosIniciales?.id}` : '';
       const endpoint = `http://localhost:3000/${recurso}${id}`;
       const bodyData = tipoAgregar === 'diagnostico'
-        ? { titulo: inputTitulo, desc: inputDesc }
-        : { subtitulo: inputSubtitulo, desc: inputDesc, id_diagnostico: diagnosticoId };
+        ? { titulo: inputTitulo, desc: markdownGenerado }
+        : { subtitulo: inputSubtitulo, desc: markdownGenerado, id_diagnostico: diagnosticoId };
 
       const response = await fetch(endpoint, {
         method: modoEdicion ? 'PATCH' : 'POST',
@@ -62,8 +66,8 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
       if (response.ok) {
         setInputTitulo('');
         setInputSubtitulo('');
-        setInputDesc('');
         setDiagnosticoId('');
+        editorRef.current?.getInstance().setMarkdown('');
 
         if (!modoEdicion && tipoAgregar === 'diagnostico') {
           setTipoAgregar('diagnostico_exito');
@@ -98,7 +102,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
           </div>
         </div>
 
-      ) : (tipoAgregar === 'protocolo' || tipoAgregar === 'diagnostico') ? (
+      ) : (
         <div className="form-container">
           <h2 className="form-title">{modoEdicion ? 'Editar' : 'Nuevo'} {tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}</h2>
 
@@ -134,7 +138,23 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
 
           <div className="input-group">
             <label>Info</label>
-            <textarea rows={6} placeholder="Escribe el paso a paso aquí..." className="form-input form-textarea" value={inputDesc} onChange={(e) => setInputDesc(e.target.value)}></textarea>
+            <div className="editor-wrapper">
+              <Editor
+                ref={editorRef}
+                initialValue={datosIniciales?.desc ?? ''}
+                previewStyle="vertical"
+                height="350px" 
+                initialEditType="wysiwyg"
+                hideModeSwitch={true} 
+                useCommandShortcut={true}
+                toolbarItems={[
+                  ['heading', 'bold', 'italic'],
+                  ['hr', 'quote'],
+                  ['ul', 'ol'],
+                  ['table']
+                ]}
+                />
+                </div>
           </div>
 
           <div className="input-group">
@@ -153,13 +173,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
             {modoEdicion ? 'Guardar cambios' : `Guardar ${tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}`}
           </button>
         </div>
-      ) : (
-        <div className="form-container" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-          <h2 className="form-title" style={{ border: 'none', backgroundColor: 'transparent' }}>
-            {tipoAgregar === 'especialidad' ? 'Gestión de Especialidades' : 'Gestión de Usuarios'}
-          </h2>
-          <p style={{ color: 'var(--gris)' }}>Interfaz en construcción. Próximamente disponible.</p>
-        </div>
+      
       )}
     </section>
   );

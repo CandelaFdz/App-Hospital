@@ -29,22 +29,15 @@ jobs:
           node-version: 20
           
       - name: Install dependencies
-        # Entramos a la carpeta frontend y forzamos la instalación
-        run: |
-          cd frontend
-          npm install --legacy-peer-deps
+        run: npm install --legacy-peer-deps
           
       - name: Build
-        # Compilamos dentro de la carpeta frontend
-        run: |
-          cd frontend
-          npm run build
+        run: npm run build
           
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Subimos la carpeta dist correcta
-          path: './frontend/dist'
+          path: './dist'
           
       - name: Deploy to GitHub Pages
         id: deployment

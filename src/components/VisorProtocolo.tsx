@@ -19,6 +19,7 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
 }) => {
   const protocoloAsociado = protocolo?.protocolo;
   const imagenesDiagnostico = protocolo?.imagenes ?? (protocolo?.imagen ? [protocolo.imagen] : []);
+  const etiquetas: string[] = Array.isArray(protocolo?.etiquetas) ? protocolo.etiquetas : [];
 
   return (
     <section className="protocol-info-">
@@ -45,6 +46,16 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
       <details className="diagnostico-detalle">
         <summary>Ver detalle del diagnóstico</summary>
         <div className="diagnostico-detalle-contenido">
+            {etiquetas.length > 0 && (
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
+              {etiquetas.map((etiqueta, index) => (
+                <span key={index} className="tag-item" style={{ textTransform: 'capitalize' }}>
+                  {etiqueta}
+                </span>
+              ))}
+            </div>
+          )}
+          
           <div className="contenido-markdown">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{protocolo?.desc || 'Detalle del diagnóstico no disponible'}</ReactMarkdown>
           </div>

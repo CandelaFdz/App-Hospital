@@ -25,6 +25,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
   const [inputTitulo, setInputTitulo] = useState('');
   const [inputSubtitulo, setInputSubtitulo] = useState('');
   const [diagnosticoId, setDiagnosticoId] = useState('');
+  const [inputEtiquetas, setInputEtiquetas] = useState('');
   const [diagnosticos, setDiagnosticos] = useState<DiagnosticoOption[]>([]);
 
   const editorRef = useRef<Editor>(null);
@@ -34,6 +35,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
     setInputTitulo(datosIniciales?.titulo ?? datosIniciales?.diagnosticoTitulo ?? '');
     setInputSubtitulo(datosIniciales?.subtitulo ?? '');
     setDiagnosticoId(String(datosIniciales?.id_diagnostico ?? ''));
+    setInputEtiquetas(datosIniciales?.etiquetas ? datosIniciales.etiquetas.join(', ') : '');
   }, [tipoInicial, datosIniciales]);
 
   useEffect(() => {
@@ -48,12 +50,17 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
   const handleGuardarSubmit = async () => {
     try {
       const markdownGenerado = editorRef.current?.getInstance().getMarkdown() || '';
-
       const recurso = tipoAgregar === 'diagnostico' ? 'diagnosticos' : 'protocolos';
       const id = modoEdicion ? `/${datosIniciales?.id}` : '';
       const endpoint = `${API_URL}/${recurso}${id}`;
+
+      const etiquetasArray = inputEtiquetas
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag !== '');
+
       const bodyData = tipoAgregar === 'diagnostico'
-        ? { titulo: inputTitulo, desc: markdownGenerado }
+        ? { titulo: inputTitulo, desc: markdownGenerado, etiquetas: etiquetasArray }
         : { subtitulo: inputSubtitulo, desc: markdownGenerado, id_diagnostico: diagnosticoId };
 
       const response = await fetch(endpoint, {
@@ -166,7 +173,13 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
           {tipoAgregar === 'diagnostico' && (
             <div className="input-group">
               <label>Etiquetas (Separadas por coma)</label>
-              <input type="text" placeholder="Ej: asma, ACV, EVC, TVP" className="form-input" />
+              <input 
+                type="text" 
+                placeholder="Ej: asma, ACV, EVC, TVP" 
+                className="form-input" 
+                value={inputEtiquetas} 
+                onChange={(e) => setInputEtiquetas(e.target.value)} 
+              />
             </div>
           )}
 

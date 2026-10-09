@@ -4,6 +4,7 @@ export interface DiagnosticoLocal {
   desc: string;
   creado?: string;
   modificado?: string;
+  etiquetas?: string[];
 }
 
 export interface ProtocoloLocal {

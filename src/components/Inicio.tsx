@@ -8,52 +8,89 @@ import { MenuFlotante } from './MenuFlotante';
 import { GestionUsuarios } from './GestionUsuarios';
 import { FormularioUsuario } from './FormUsuarios';
 import { GestionEspecialidades } from './GestionEspecialidades';
+import { obtenerDiagnosticosConProtocolos } from '../db/protocolos-repository';
+import { sincronizarDatos } from '../services/sync-service';
+import type { DiagnosticoConProtocolo } from '../db/types';
 
 interface InicioProps {
   onNavigateToProtocols?: () => void;
 }
 
+type DatosEdicion = Partial<DiagnosticoConProtocolo> & {
+  diagnosticoTitulo?: string;
+  id_diagnostico?: string;
+  subtitulo?: string;
+};
+
+type EstadoSincronizacion = 'exito' | 'actualizado' | 'error';
+
 export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
   const [vistaActual, setVistaActual] = useState<'inicio' | 'crear' | 'leer'>('inicio');
   const [tipoFormulario, setTipoFormulario] = useState<'protocolo' | 'diagnostico' | 'especialidad' | 'usuario' | 'crear_usuario'>('protocolo');
-  const [protocoloSeleccionado, setProtocoloSeleccionado] = useState<any>(null);
-  const [tarjetas, setTarjetas] = useState<any[]>([]);
+  const [protocoloSeleccionado, setProtocoloSeleccionado] = useState<Awaited<ReturnType<typeof obtenerDiagnosticosConProtocolos>>[number] | null>(null);
+  const [tarjetas, setTarjetas] = useState<Awaited<ReturnType<typeof obtenerDiagnosticosConProtocolos>>>([]);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [datosEdicion, setDatosEdicion] = useState<any>(null);
-  const [versionDatos, setVersionDatos] = useState(0);
+  const [datosEdicion, setDatosEdicion] = useState<DatosEdicion | null>(null);
+  const [sincronizando, setSincronizando] = useState(false);
+  const [mensajeSincronizacion, setMensajeSincronizacion] = useState('');
+  const [estadoSincronizacion, setEstadoSincronizacion] = useState<EstadoSincronizacion | null>(null);
 
   useEffect(() => {
-    const cargarDatosBackend = async () => {
+    let activo = true;
+
+    const cargarDatosLocales = async () => {
       try {
-        const [resProtocolos, resDiagnosticos] = await Promise.all([
-          fetch('http://localhost:3000/protocolos'),
-          fetch('http://localhost:3000/diagnosticos')
-        ]);
-
-        if (resProtocolos.ok && resDiagnosticos.ok) {
-          const dataProtocolos = await resProtocolos.json();
-          const dataDiagnosticos = await resDiagnosticos.json();
-          const diagnosticosConProtocolo = dataDiagnosticos.map((diagnostico: { id: number }) => ({
-            ...diagnostico,
-            protocolo: dataProtocolos.find(
-              (protocolo: { id_diagnostico: number }) => protocolo.id_diagnostico === diagnostico.id
-            )
-          }));
-
-          setTarjetas(diagnosticosConProtocolo);
+        const datosLocales = await obtenerDiagnosticosConProtocolos();
+        if (activo) {
+          setTarjetas(datosLocales);
         }
       } catch (error) {
-        console.error("Error al hacer el GET al backend:", error);
+        console.error('No se pudieron leer los datos locales:', error);
       }
     };
 
-    cargarDatosBackend();
-  }, [versionDatos]);
+    const sincronizarYRecargar = async (mostrarResultado = false) => {
+      if (sincronizando) return;
 
+      setSincronizando(true);
+      try {
+        await sincronizarDatos();
+        if (mostrarResultado && activo) {
+          setMensajeSincronizacion('Datos sincronizados correctamente.');
+        }
+      } catch (error) {
+        console.error('No se pudo sincronizar; se usarán los datos locales:', error);
+        if (mostrarResultado && activo) {
+          setMensajeSincronizacion(
+            navigator.onLine
+              ? 'No se pudo sincronizar. Revisa la URL y el usuario configurados.'
+              : 'Sin conexión. Se conservan los datos locales.'
+          );
+        }
+      }
+      await cargarDatosLocales();
+      if (activo) {
+        setSincronizando(false);
+      }
+    };
+
+    void cargarDatosLocales();
+    void sincronizarYRecargar();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+  const handleCardClick = (tarjeta: DiagnosticoConProtocolo) => {
+    setProtocoloSeleccionado(tarjeta);
+    setVistaActual('leer');
+    if (onNavigateToProtocols) onNavigateToProtocols();
+  };
 
   const handleVolverDesdeFormulario = () => {
-    setVersionDatos((version) => version + 1);
     setVistaActual('inicio');
+    void obtenerDiagnosticosConProtocolos().then(setTarjetas);
   };
 
   const handleAbrirFormulario = (tipo: 'protocolo' | 'diagnostico' | 'especialidad' | 'usuario') => {
@@ -63,13 +100,6 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
     setVistaActual('crear');
   };
 
-  const handleCardClick = (tarjeta: any) => {
-    setProtocoloSeleccionado(tarjeta);
-    setModoEdicion(false);
-    setVistaActual('leer');
-    if (onNavigateToProtocols) onNavigateToProtocols();
-  };
-
   return (
     <div className="app-wrapper">
       <Header />
@@ -77,7 +107,53 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
       <main className={`main-content ${vistaActual !== 'inicio' ? 'modo-lectura' : ''}`}>
 
         {vistaActual === 'inicio' && (
-          <BuscadorInicio tarjetas={tarjetas} onCardClick={handleCardClick} />
+          <>
+            <div className="sync-actions">
+              <button
+                className="btn"
+                type="button"
+                onClick={() => {
+                  setMensajeSincronizacion('');
+                  setEstadoSincronizacion(null);
+                  void (async () => {
+                    setSincronizando(true);
+                    try {
+                      const resultado = await sincronizarDatos();
+                      setMensajeSincronizacion(
+                        resultado.huboCambios
+                          ? 'Datos sincronizados correctamente.'
+                          : 'Ya estás en la última versión.'
+                      );
+                      setEstadoSincronizacion(resultado.huboCambios ? 'actualizado' : 'exito');
+                    } catch (error) {
+                      console.error('No se pudo sincronizar manualmente:', error);
+                      setMensajeSincronizacion(
+                        navigator.onLine
+                          ? 'No se pudo sincronizar. Revisa la URL y el usuario configurados.'
+                          : 'No se puede sincronizar, usando datos locales.'
+                      );
+                      setEstadoSincronizacion('error');
+                    } finally {
+                      setTarjetas(await obtenerDiagnosticosConProtocolos());
+                      setSincronizando(false);
+                    }
+                  })();
+                }}
+                disabled={sincronizando}
+              >
+                {sincronizando ? 'Sincronizando...' : 'Sincronizar ahora'}
+              </button>
+              {mensajeSincronizacion && (
+                <div className={`sync-message sync-message-${estadoSincronizacion ?? 'exito'}`} role="status">
+                  <span className="sync-message-icon" aria-hidden="true">
+                    {estadoSincronizacion === 'error' ? '!' : estadoSincronizacion === 'exito' ? '✓' : '↻'}
+                  </span>
+                  <span>{mensajeSincronizacion}</span>
+                </div>
+              )}
+            </div>
+            <BuscadorInicio tarjetas={tarjetas} onCardClick={handleCardClick} />
+          </>
         )}
 
         {vistaActual === 'crear' && (
@@ -87,9 +163,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
               onCrearUsuario={() => setTipoFormulario('crear_usuario')}
             />
           ) : tipoFormulario === 'crear_usuario' ? (
-            <FormularioUsuario
-              onVolver={() => setTipoFormulario('usuario')}
-            />
+            <FormularioUsuario onVolver={() => setTipoFormulario('usuario')} />
           ) : tipoFormulario === 'especialidad' ? (
             <GestionEspecialidades onVolver={() => setVistaActual('inicio')} />
           ) : (
@@ -105,12 +179,12 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
         {vistaActual === 'leer' && (
           <VisorProtocolo
             protocolo={protocoloSeleccionado}
-
             onEditarProtocolo={() => {
               setTipoFormulario('protocolo');
               setModoEdicion(true);
               setDatosEdicion({
                 ...protocoloSeleccionado?.protocolo,
+                titulo: protocoloSeleccionado?.protocolo?.subtitulo ?? '',
                 diagnosticoTitulo: protocoloSeleccionado?.titulo
               });
               setVistaActual('crear');
@@ -127,7 +201,6 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
               setDatosEdicion(null);
               setVistaActual('crear');
             }}
-
             onVolver={() => {
               setVistaActual('inicio');
               setProtocoloSeleccionado(null);
@@ -140,6 +213,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
       {vistaActual === 'inicio' && (
         <MenuFlotante onAbrirFormulario={handleAbrirFormulario} />
       )}
+
     </div>
   );
 };

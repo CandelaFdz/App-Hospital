@@ -19,8 +19,8 @@ export default defineConfig({
         scope: "/App-Hospital/"
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        navigateFallback: "/App-Hospital/index.html",
+        globPatterns: ["**/*.{js,css,html,ico,png,jpg,jpeg,webp,svg,woff2}"],
+        navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
       },
       devOptions: {

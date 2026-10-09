@@ -13,7 +13,7 @@ export const obtenerDiagnosticosConProtocolos = async (): Promise<DiagnosticoCon
   return diagnosticos.map((diagnostico) => ({
     ...diagnostico,
     protocolo: protocolos.find(
-      (protocolo) => protocolo.id_diagnostico === diagnostico.id
+    (protocolo) => String(protocolo.id_diagnostico) === String(diagnostico.id)
     )
   }));
 };

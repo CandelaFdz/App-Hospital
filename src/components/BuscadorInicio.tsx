@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
+import type { DiagnosticoConProtocolo } from '../db/types';
 
 interface BuscadorInicioProps {
-  tarjetas: any[];
-  onCardClick: (tarjeta: any) => void;
+  tarjetas: DiagnosticoConProtocolo[];
+  onCardClick: (tarjeta: DiagnosticoConProtocolo) => void;
 }
 
 export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCardClick }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const tarjetasFiltradas = tarjetas.filter((tarjeta) =>
     tarjeta.titulo.toLowerCase().includes(searchTerm.trim().toLowerCase()) || //puede buscar por título
-    tarjeta.protocolo?.subtitulo.toLowerCase().includes((searchTerm.trim().toLowerCase())) //puede buscar por subtítulo (del protocolo)
+    tarjeta.protocolo?.subtitulo.toLowerCase().includes(searchTerm.trim().toLowerCase()) //puede buscar por subtítulo (del protocolo)
   );
 
   return (
@@ -42,7 +43,7 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
           >
             <div className="card-text">
               <h2>{tarjeta.titulo}</h2>
-              <p>{tarjeta.protocolo?.subtitulo || tarjeta.subtitulo || ''}</p>
+              <p>{tarjeta.protocolo?.subtitulo || ''}</p>
             </div>
             <div className="card-arrow">➔</div>
           </button>

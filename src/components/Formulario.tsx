@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Editor } from '@toast-ui/react-editor';
 import '@toast-ui/editor/dist/toastui-editor.css';
+import { API_URL } from '../config/api';
 
 interface FormularioCreacionProps {
   tipoInicial: 'protocolo' | 'diagnostico';
@@ -37,7 +38,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
 
   useEffect(() => {
     if (tipoInicial !== 'protocolo') return;
-    fetch('http://localhost:3000/diagnosticos')
+    fetch(`${API_URL}/diagnosticos`)
       .then((response) => response.ok ? response.json() : Promise.reject(response.status))
       .then((data: DiagnosticoOption[]) => setDiagnosticos(data))
       .catch((error) => console.error('Error al cargar diagnósticos:', error));
@@ -50,7 +51,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
 
       const recurso = tipoAgregar === 'diagnostico' ? 'diagnosticos' : 'protocolos';
       const id = modoEdicion ? `/${datosIniciales?.id}` : '';
-      const endpoint = `http://localhost:3000/${recurso}${id}`;
+      const endpoint = `${API_URL}/${recurso}${id}`;
       const bodyData = tipoAgregar === 'diagnostico'
         ? { titulo: inputTitulo, desc: markdownGenerado }
         : { subtitulo: inputSubtitulo, desc: markdownGenerado, id_diagnostico: diagnosticoId };

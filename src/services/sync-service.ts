@@ -1,5 +1,6 @@
 import { higaDb } from '../db/higa-db';
 import type { DiagnosticoLocal, ProtocoloLocal } from '../db/types';
+import { API_URL, SYNC_USER_ID } from '../config/api';
 
 interface SyncResponse {
   nro_sync: string;
@@ -28,8 +29,6 @@ type DiagnosticoRemoto = DiagnosticoLocal & {
   protocolo?: ProtocoloRemoto;
 };
 
-const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-const SYNC_USER_ID = import.meta.env.VITE_SYNC_USER_ID ?? '0';
 const SYNC_CURSOR_KEY = 'sync_cursor';
 
 const validarRespuesta = (respuesta: unknown): SyncResponse => {

@@ -13,7 +13,7 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
     const coincideTitulo = tarjeta.titulo.toLowerCase().includes(term);
     const coincideSubtitulo = tarjeta.protocolo?.subtitulo?.toLowerCase().includes(term);
     const coincideEtiqueta = Array.isArray(tarjeta.etiquetas) && tarjeta.etiquetas.some(
-      (etiqueta) => etiqueta.toLowerCase().includes(term)
+      (etiqueta: string) => etiqueta.toLowerCase().includes(term)
     );
     return coincideTitulo || coincideSubtitulo || coincideEtiqueta;
   });
@@ -50,10 +50,10 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
             <div className="card-text">
               <h2>{tarjeta.titulo}</h2>
               <p>{tarjeta.protocolo?.subtitulo || ''}</p>
-              {Array.isArray(tarjeta.etiquetas) && tarjeta.etiquetas.length > 0 && (
-                <div className="tags-display" style={{ marginTop: '0.5rem', marginBottom: 0 }}>
-                  {tarjeta.etiquetas.map((tag, i) => (
-                    <span key={i} className="tag-item" style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem' }}>
+             {Array.isArray(tarjeta.etiquetas) && tarjeta.etiquetas.length > 0 && (
+                <div className="tags-display" style={{ marginTop: '0.5rem' }}>
+                  {tarjeta.etiquetas.map((tag: string, index: number) => (
+                    <span key={index} className="tag-item" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
                       {tag}
                     </span>
                   ))}

@@ -15,18 +15,14 @@ interface DiagnosticoOption {
   titulo: string;
 }
 
-export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
-  tipoInicial,
-  modoEdicion = false,
-  datosIniciales,
-  onVolver
-}) => {
+export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInicial, modoEdicion = false, datosIniciales, onVolver}) => {
   const [tipoAgregar, setTipoAgregar] = useState<string>(tipoInicial);
   const [inputTitulo, setInputTitulo] = useState('');
   const [inputSubtitulo, setInputSubtitulo] = useState('');
   const [diagnosticoId, setDiagnosticoId] = useState('');
   const [inputEtiquetas, setInputEtiquetas] = useState('');
   const [diagnosticos, setDiagnosticos] = useState<DiagnosticoOption[]>([]);
+  const [eliminando, setEliminando] = useState(false);
 
   const editorRef = useRef<Editor>(null);
 
@@ -38,20 +34,65 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
     setInputEtiquetas(datosIniciales?.etiquetas ? datosIniciales.etiquetas.join(', ') : '');
   }, [tipoInicial, datosIniciales]);
 
-  useEffect(() => {
-    if (tipoInicial !== 'protocolo') return;
-    fetch(`${API_URL}/diagnosticos`)
-      .then((response) => response.ok ? response.json() : Promise.reject(response.status))
-      .then((data: DiagnosticoOption[]) => setDiagnosticos(data))
-      .catch((error) => console.error('Error al cargar diagnósticos:', error));
-  }, [tipoInicial]);
+  // Si el formulario es para cargar Protocolo, se van a buscar los diagnósticos disponibles para el desplegable de opciones
+    useEffect(() => {
+      if (tipoInicial !== 'protocolo') return;
+      fetch(`${API_URL}/diagnosticos`) 
+        .then((response) => response.ok ? response.json() : Promise.reject(response.status))
+        .then((data: DiagnosticoOption[]) => setDiagnosticos(data))
+        .catch((error) => console.error('Error al cargar diagnósticos:', error));
+    }, [tipoInicial]);
 
-  //La opción de guardar se comporta de forma distinta según el formulario esté en modo edición o no
+
+  //Función para eliminar protocolos o diagnósticos
+  const handleEliminar = async () => {
+    const id = datosIniciales?.id;
+    if (!modoEdicion || !id) {
+      console.error('No se puede eliminar el recurso: falta el identificador');
+      return;
+    }
+
+    //El endpoint se define según el valor de tipoAgregar (si es diagnóstico o si es protocolo)
+    const recurso = tipoAgregar === 'diagnostico' ? 'diagnosticos' : 'protocolos';
+    const nombreRecurso = tipoAgregar === 'diagnostico' ? 'diagnóstico' : 'protocolo';
+
+    //Mensaje de alerta antes de eliminar (no se puede deshacer)
+    if (!window.confirm(`¿Está seguro de que desea eliminar este ${nombreRecurso}? Esta acción no se puede deshacer.`)) {
+      return;
+    }
+
+    setEliminando(true);
+    try {
+      const response = await fetch(`${API_URL}/${recurso}/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorResponse = await response.json().catch(() => null) as { message?: string } | null;
+        throw new Error(errorResponse?.message || `Falló la eliminación (${response.status})`);
+      }
+
+      onVolver();
+    } catch (error) {
+      console.error(`Error al eliminar el ${nombreRecurso}:`, error);
+      window.alert(error instanceof Error ? error.message : `No se pudo eliminar el ${nombreRecurso}.`);
+    } finally {
+      setEliminando(false);
+    }
+  };
+
+  
+  //Función para guardar protocolos o diagnósticos:
   const handleGuardarSubmit = async () => {
     try {
       const markdownGenerado = editorRef.current?.getInstance().getMarkdown() || '';
+
+      //El endpoint se define según el valor de tipoAgregar (si es diagnóstico o si es protocolo)
       const recurso = tipoAgregar === 'diagnostico' ? 'diagnosticos' : 'protocolos';
+
+      //Si se está en modo edición, el endpoint se configurará con el id del recurso seleccionado
       const id = modoEdicion ? `/${datosIniciales?.id}` : '';
+      
       const endpoint = `${API_URL}/${recurso}${id}`;
 
       const etiquetasArray = inputEtiquetas
@@ -183,9 +224,21 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({
             </div>
           )}
 
-          <button className="btn-guardar" onClick={handleGuardarSubmit}>
-            {modoEdicion ? 'Guardar cambios' : `Guardar ${tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}`}
-          </button>
+          <div className="form-actions">
+            <button className="btn-guardar" onClick={handleGuardarSubmit} disabled={eliminando}>
+              {modoEdicion ? 'Guardar cambios' : `Guardar ${tipoAgregar === 'diagnostico' ? 'Diagnóstico' : 'Protocolo'}`}
+            </button>
+            {modoEdicion && (
+              <button
+                className="btn-eliminar"
+                type="button"
+                onClick={() => void handleEliminar()}
+                disabled={eliminando}
+              >
+                {eliminando ? 'Eliminando...' : `Eliminar ${tipoAgregar === 'diagnostico' ? 'diagnóstico' : 'protocolo'}`}
+              </button>
+            )}
+          </div>
         </div>
       
       )}

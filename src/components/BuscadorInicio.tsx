@@ -7,9 +7,11 @@ interface BuscadorInicioProps {
 }
 
 export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCardClick }) => {
-  const [searchTerm, setSearchTerm] = useState<string>('');
+	const [searchTerm, setSearchTerm] = useState<string>('');
+
+	// en tarjetasFiltradas se guardan las tarjetas según el término de búsqueda normalizado
   const tarjetasFiltradas = tarjetas.filter((tarjeta) => {
-  const term = searchTerm.trim().toLowerCase();
+  	const term = searchTerm.trim().toLowerCase();
     const coincideTitulo = tarjeta.titulo.toLowerCase().includes(term);
     const coincideSubtitulo = tarjeta.protocolo?.subtitulo?.toLowerCase().includes(term);
     const coincideEtiqueta = Array.isArray(tarjeta.etiquetas) && tarjeta.etiquetas.some(
@@ -20,6 +22,7 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
 
   return (
     <>
+			{/* Barra de búsqueda */}
       <section className="search-section">
         <div className="search-input-wrapper">
           <input
@@ -29,7 +32,6 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             aria-label="Buscar diagnósticos"
-            style={{ marginTop: '-1rem' }}
           />
           <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
@@ -38,6 +40,7 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
         </div>
       </section>
 
+			{/* Tarjetas renderizadas */}
       <section className="action-section">
         {tarjetasFiltradas.map((tarjeta) => (
           <button
@@ -45,15 +48,14 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
             className="protocol-card"
             onClick={() => onCardClick(tarjeta)}
             aria-label="Ir a la pantalla de protocolos"
-            style={{ marginBottom: '1rem' }}
           >
             <div className="card-text">
               <h2>{tarjeta.titulo}</h2>
               <p>{tarjeta.protocolo?.subtitulo || ''}</p>
-             {Array.isArray(tarjeta.etiquetas) && tarjeta.etiquetas.length > 0 && (
-                <div className="tags-display" style={{ marginTop: '0.5rem' }}>
+            	{Array.isArray(tarjeta.etiquetas) && tarjeta.etiquetas.length > 0 && (
+                <div className="tags-display">
                   {tarjeta.etiquetas.map((tag: string, index: number) => (
-                    <span key={index} className="tag-item" style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
+                    <span key={index} className="tag-item">
                       {tag}
                     </span>
                   ))}

@@ -40,7 +40,6 @@ export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCard
         </div>
       </section>
 
-			{/* Tarjetas renderizadas */}
       <section className="action-section">
         {tarjetasFiltradas.map((tarjeta) => (
           <button

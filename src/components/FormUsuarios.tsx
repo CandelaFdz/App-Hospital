@@ -7,21 +7,16 @@ interface FormularioUsuarioProps {
 export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver }) => {
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
-  
-  // Estados para las contraseñas y para mostrar/ocultar
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
-  
   const [isAdmin, setIsAdmin] = useState(false);
   const [especialidades, setEspecialidades] = useState<string[]>([]);
-
-  
   const [busquedaEsp, setBusquedaEsp] = useState('');
   const [mostrarLista, setMostrarLista] = useState(false);
-
+  
   const opcionesEspecialidad = ['Cardiología', 'Neurología', 'Neumonología', 'Terapia Intensiva', 'Pediatría', 'Traumatología', 'Ginecología', 'Cirugía General'];
-
 
   const opcionesFiltradas = opcionesEspecialidad.filter(esp => 
     esp.toLowerCase().includes(busquedaEsp.toLowerCase()) && !especialidades.includes(esp)
@@ -38,23 +33,47 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver }
   };
 
   const handleGuardarUsuario = async () => {
-    // Validación básica antes de enviar al backend
     if (password !== confirmPassword) {
       alert("Error: Las contraseñas no coinciden. Por favor, verifícalas.");
       return;
     }
 
+    if (!username.trim()) {
+      alert("Error: El nombre de usuario es obligatorio.");
+      return;
+    }
+
+    
     const nuevoUsuario = {
+      username,
       nombre,
       apellido,
-      pass_hash: password,
+      password: password,
       is_admin: isAdmin,
       especialidades
     };
     
-    console.log("Enviando al backend:", nuevoUsuario);
-    alert("Usuario simulado con éxito. Revisa la consola.");
-    onVolver();
+    try {
+      const response = await fetch('http://localhost:3000/usuarios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(nuevoUsuario)
+      });
+
+      if (response.ok) {
+        alert("¡Usuario creado con éxito en la base de datos!");
+        onVolver();
+      } else {
+        const errorData = await response.json();
+        console.error("Detalles del error del servidor:", errorData);
+        alert(`Error al crear el usuario: ${errorData.message || 'Revisa la consola'}`);
+      }
+    } catch (error) {
+      console.error("Error de conexión:", error);
+      alert("No se pudo conectar con el servidor (backend).");
+    }
   };
 
   return (
@@ -65,6 +84,11 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver }
         <h2 className="form-title">Nuevo Usuario</h2>
 
         <div className="input-group">
+          <label>Usuario (Para iniciar sesión)</label>
+          <input type="text" className="form-input" placeholder="Ej: jperez" value={username} onChange={e => setUsername(e.target.value)} />
+        </div>
+
+        <div className="input-group">
           <label>Nombre</label>
           <input type="text" className="form-input" value={nombre} onChange={e => setNombre(e.target.value)} />
         </div>
@@ -73,9 +97,6 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver }
           <label>Apellido</label>
           <input type="text" className="form-input" value={apellido} onChange={e => setApellido(e.target.value)} />
         </div>
-
-        
-
 
         <div className="input-group">
           <label style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -91,7 +112,6 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver }
           <input 
             type={mostrarPassword ? "text" : "password"} 
             className="form-input" 
-    
             value={password} 
             onChange={e => setPassword(e.target.value)} 
           />
@@ -107,7 +127,6 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver }
           />
         </div>
 
-        
         <div className="input-group checkbox-group">
           <input 
             type="checkbox" 
@@ -148,7 +167,6 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver }
             </ul>
           )}
           
-          {/* Contenedor de Etiquetas (Tags) */}
           <div className="tags-display">
             {especialidades.map(esp => (
               <span key={esp} className="tag-item">

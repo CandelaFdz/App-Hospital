@@ -8,6 +8,7 @@ import { MenuFlotante } from './MenuFlotante';
 import { GestionUsuarios } from './GestionUsuarios';
 import { FormularioUsuario } from './FormUsuarios';
 import { GestionEspecialidades } from './GestionEspecialidades';
+import { Login } from './Login';
 import { obtenerDiagnosticosConProtocolos } from '../db/protocolos-repository';
 import { sincronizarDatos } from '../services/sync-service';
 import type { DiagnosticoConProtocolo } from '../db/types';
@@ -34,6 +35,11 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
   const [sincronizando, setSincronizando] = useState(false);
   const [mensajeSincronizacion, setMensajeSincronizacion] = useState('');
   const [estadoSincronizacion, setEstadoSincronizacion] = useState<EstadoSincronizacion | null>(null);
+  const [mostrarLogin, setMostrarLogin] = useState(false);
+  const [usuarioLogueado, setUsuarioLogueado] = useState<any>(() => {
+  const usuarioGuardado = localStorage.getItem('usuario_hospital');
+  return usuarioGuardado ? JSON.parse(usuarioGuardado) : null;
+});
 
   useEffect(() => {
     let activo = true;
@@ -102,118 +108,140 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
 
   return (
     <div className="app-wrapper">
-      <Header />
+      <Header
+        usuario={usuarioLogueado}
+        onAbrirLogin={() => setMostrarLogin(true)}
+        onCerrarSesion={() => {
+          setUsuarioLogueado(null);
+          localStorage.removeItem('usuario_hospital');
+          setVistaActual('inicio');
+        }}
+      />
 
-      <main className={`main-content ${vistaActual !== 'inicio' ? 'modo-lectura' : ''}`}>
-
-        {vistaActual === 'inicio' && (
+      <main className={`main-content ${vistaActual !== 'inicio' || mostrarLogin ? 'modo-lectura' : ''}`}>
+        {mostrarLogin ? (
+          <Login
+            onLoginSuccess={(usuario) => {
+              setUsuarioLogueado(usuario);
+              setMostrarLogin(false);
+              localStorage.setItem('usuario_hospital', JSON.stringify(usuario));
+              setMostrarLogin(false);
+            }}
+            onCancelar={() => setMostrarLogin(false)}
+          />
+        ) : (
           <>
-            <div className="sync-actions">
-              <button
-                className="btn"
-                type="button"
-                onClick={() => {
-                  setMensajeSincronizacion('');
-                  setEstadoSincronizacion(null);
-                  void (async () => {
-                    setSincronizando(true);
-                    try {
-                      const resultado = await sincronizarDatos();
-                      setMensajeSincronizacion(
-                        resultado.huboCambios
-                          ? 'Datos sincronizados correctamente.'
-                          : 'Ya estás en la última versión.'
-                      );
-                      setEstadoSincronizacion(resultado.huboCambios ? 'actualizado' : 'exito');
-                    } catch (error) {
-                      console.error('No se pudo sincronizar manualmente:', error);
-                      setMensajeSincronizacion(
-                        navigator.onLine
-                          ? 'No se pudo sincronizar. Revisa la URL y el usuario configurados.'
-                          : 'No se puede sincronizar, usando datos locales.'
-                      );
-                      setEstadoSincronizacion('error');
-                    } finally {
-                      setTarjetas(await obtenerDiagnosticosConProtocolos());
-                      setSincronizando(false);
-                    }
-                  })();
-                }}
-                disabled={sincronizando}
-              >
-                {sincronizando ? 'Sincronizando...' : 'Sincronizar ahora'}
-              </button>
-              {mensajeSincronizacion && (
-                <div className={`sync-message sync-message-${estadoSincronizacion ?? 'exito'}`} role="status">
-                  <span className="sync-message-icon" aria-hidden="true">
-                    {estadoSincronizacion === 'error' ? '!' : estadoSincronizacion === 'exito' ? '✓' : '↻'}
-                  </span>
-                  <span>{mensajeSincronizacion}</span>
+            {vistaActual === 'inicio' && (
+              <>
+                <div className="sync-actions">
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={() => {
+                      setMensajeSincronizacion('');
+                      setEstadoSincronizacion(null);
+                      void (async () => {
+                        setSincronizando(true);
+                        try {
+                          const resultado = await sincronizarDatos();
+                          setMensajeSincronizacion(
+                            resultado.huboCambios
+                              ? 'Datos sincronizados correctamente.'
+                              : 'Ya estás en la última versión.'
+                          );
+                          setEstadoSincronizacion(resultado.huboCambios ? 'actualizado' : 'exito');
+                        } catch (error) {
+                          console.error('No se pudo sincronizar manualmente:', error);
+                          setMensajeSincronizacion(
+                            navigator.onLine
+                              ? 'No se pudo sincronizar. Revisa la URL y el usuario configurados.'
+                              : 'No se puede sincronizar, usando datos locales.'
+                          );
+                          setEstadoSincronizacion('error');
+                        } finally {
+                          setTarjetas(await obtenerDiagnosticosConProtocolos());
+                          setSincronizando(false);
+                        }
+                      })();
+                    }}
+                    disabled={sincronizando}
+                  >
+                    {sincronizando ? 'Sincronizando...' : 'Sincronizar ahora'}
+                  </button>
+                  {mensajeSincronizacion && (
+                    <div className={`sync-message sync-message-${estadoSincronizacion ?? 'exito'}`} role="status">
+                      <span className="sync-message-icon" aria-hidden="true">
+                        {estadoSincronizacion === 'error' ? '!' : estadoSincronizacion === 'exito' ? '✓' : '↻'}
+                      </span>
+                      <span>{mensajeSincronizacion}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <BuscadorInicio tarjetas={tarjetas} onCardClick={handleCardClick} />
+                <BuscadorInicio tarjetas={tarjetas} onCardClick={handleCardClick} />
+              </>
+            )}
+
+            {vistaActual === 'crear' && Boolean(usuarioLogueado?.is_admin) && (
+              tipoFormulario === 'usuario' ? (
+                <GestionUsuarios
+                  onVolver={() => setVistaActual('inicio')}
+                  onCrearUsuario={() => setTipoFormulario('crear_usuario')}
+                />
+              ) : tipoFormulario === 'crear_usuario' ? (
+                <FormularioUsuario onVolver={() => setTipoFormulario('usuario')} />
+              ) : tipoFormulario === 'especialidad' ? (
+                <GestionEspecialidades onVolver={() => setVistaActual('inicio')} />
+              ) : (
+                <FormularioCreacion
+                  tipoInicial={tipoFormulario}
+                  modoEdicion={modoEdicion}
+                  datosIniciales={datosEdicion}
+                  onVolver={handleVolverDesdeFormulario}
+                />
+              )
+            )}
+
+            {vistaActual === 'leer' && (
+              <VisorProtocolo
+                protocolo={protocoloSeleccionado}
+                onEditarProtocolo={() => {
+                  if (!usuarioLogueado?.is_admin) return;
+                  setTipoFormulario('protocolo');
+                  setModoEdicion(true);
+                  setDatosEdicion({
+                    ...protocoloSeleccionado?.protocolo,
+                    titulo: protocoloSeleccionado?.protocolo?.subtitulo ?? '',
+                    diagnosticoTitulo: protocoloSeleccionado?.titulo
+                  });
+                  setVistaActual('crear');
+                }}
+                onEditarDiagnostico={() => {
+                  if (!usuarioLogueado?.is_admin) return;
+                  setTipoFormulario('diagnostico');
+                  setModoEdicion(true);
+                  setDatosEdicion(protocoloSeleccionado);
+                  setVistaActual('crear');
+                }}
+                onCrearProtocolo={() => {
+                  if (!usuarioLogueado?.is_admin) return;
+                  setTipoFormulario('protocolo');
+                  setModoEdicion(false);
+                  setDatosEdicion(null);
+                  setVistaActual('crear');
+                }}
+                onVolver={() => {
+                  setVistaActual('inicio');
+                  setProtocoloSeleccionado(null);
+                }}
+              />
+            )}
           </>
         )}
-
-        {vistaActual === 'crear' && (
-          tipoFormulario === 'usuario' ? (
-            <GestionUsuarios
-              onVolver={() => setVistaActual('inicio')}
-              onCrearUsuario={() => setTipoFormulario('crear_usuario')}
-            />
-          ) : tipoFormulario === 'crear_usuario' ? (
-            <FormularioUsuario onVolver={() => setTipoFormulario('usuario')} />
-          ) : tipoFormulario === 'especialidad' ? (
-            <GestionEspecialidades onVolver={() => setVistaActual('inicio')} />
-          ) : (
-            <FormularioCreacion
-              tipoInicial={tipoFormulario}
-              modoEdicion={modoEdicion}
-              datosIniciales={datosEdicion}
-              onVolver={handleVolverDesdeFormulario}
-            />
-          )
-        )}
-
-        {vistaActual === 'leer' && (
-          <VisorProtocolo
-            protocolo={protocoloSeleccionado}
-            onEditarProtocolo={() => {
-              setTipoFormulario('protocolo');
-              setModoEdicion(true);
-              setDatosEdicion({
-                ...protocoloSeleccionado?.protocolo,
-                titulo: protocoloSeleccionado?.protocolo?.subtitulo ?? '',
-                diagnosticoTitulo: protocoloSeleccionado?.titulo
-              });
-              setVistaActual('crear');
-            }}
-            onEditarDiagnostico={() => {
-              setTipoFormulario('diagnostico');
-              setModoEdicion(true);
-              setDatosEdicion(protocoloSeleccionado);
-              setVistaActual('crear');
-            }}
-            onCrearProtocolo={() => {
-              setTipoFormulario('protocolo');
-              setModoEdicion(false);
-              setDatosEdicion(null);
-              setVistaActual('crear');
-            }}
-            onVolver={() => {
-              setVistaActual('inicio');
-              setProtocoloSeleccionado(null);
-            }}
-          />
-        )}
-
       </main>
 
-      {vistaActual === 'inicio' && (
+      {!mostrarLogin && vistaActual === 'inicio' && Boolean(usuarioLogueado?.is_admin) && (
         <MenuFlotante onAbrirFormulario={handleAbrirFormulario} />
       )}
-
     </div>
   );
 };

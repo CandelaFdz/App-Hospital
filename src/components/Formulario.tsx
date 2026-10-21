@@ -15,6 +15,11 @@ interface DiagnosticoOption {
   titulo: string;
 }
 
+interface EspecialidadOption {
+  id: string;
+  nombre: string;
+}
+
 export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInicial, modoEdicion = false, datosIniciales, onVolver}) => {
   const [tipoAgregar, setTipoAgregar] = useState<string>(tipoInicial);
   const [inputTitulo, setInputTitulo] = useState('');
@@ -23,6 +28,10 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
   const [inputEtiquetas, setInputEtiquetas] = useState('');
   const [diagnosticos, setDiagnosticos] = useState<DiagnosticoOption[]>([]);
   const [eliminando, setEliminando] = useState(false);
+  const [especialidadesDB, setEspecialidadesDB] = useState<EspecialidadOption[]>([]);
+  const [especialidadesSeleccionadas, setEspecialidadesSeleccionadas] = useState<EspecialidadOption[]>([]);
+  const [busquedaEsp, setBusquedaEsp] = useState('');
+  const [mostrarListaEsp, setMostrarListaEsp] = useState(false);
 
   const editorRef = useRef<Editor>(null);
 
@@ -32,6 +41,10 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
     setInputSubtitulo(datosIniciales?.subtitulo ?? '');
     setDiagnosticoId(String(datosIniciales?.id_diagnostico ?? ''));
     setInputEtiquetas(datosIniciales?.etiquetas ? datosIniciales.etiquetas.join(', ') : '');
+    
+    if (datosIniciales?.especialidades) {
+      setEspecialidadesSeleccionadas(datosIniciales.especialidades);
+    }
   }, [tipoInicial, datosIniciales]);
 
   // Si el formulario es para cargar Protocolo, se van a buscar los diagnósticos disponibles para el desplegable de opciones
@@ -43,6 +56,27 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
         .catch((error) => console.error('Error al cargar diagnósticos:', error));
     }, [tipoInicial]);
 
+    useEffect(() => {
+    fetch(`${API_URL}/especialidades`)
+      .then((response) => response.ok ? response.json() : Promise.reject(response.status))
+      .then((data: EspecialidadOption[]) => setEspecialidadesDB(data))
+      .catch((error) => console.error('Error al cargar especialidades:', error));
+  }, []);
+
+  const opcionesEspecialidadesFiltradas = especialidadesDB.filter(esp => 
+    esp.nombre.toLowerCase().includes(busquedaEsp.toLowerCase()) && 
+    !especialidadesSeleccionadas.some(seleccionada => seleccionada.id === esp.id)
+  );
+
+  const handleSeleccionarEspecialidad = (esp: EspecialidadOption) => {
+    setEspecialidadesSeleccionadas([...especialidadesSeleccionadas, esp]);
+    setBusquedaEsp('');
+    setMostrarListaEsp(false);
+  };
+
+  const handleQuitarEspecialidad = (idQuitar: string) => {
+    setEspecialidadesSeleccionadas(especialidadesSeleccionadas.filter(esp => esp.id !== idQuitar));
+  };
 
   //Función para eliminar protocolos o diagnósticos
   const handleEliminar = async () => {
@@ -101,7 +135,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
         .filter(tag => tag !== '');
 
       const bodyData = tipoAgregar === 'diagnostico'
-        ? { titulo: inputTitulo, desc: markdownGenerado, etiquetas: etiquetasArray }
+        ? { titulo: inputTitulo, desc: markdownGenerado, etiquetas: etiquetasArray, especialidades: especialidadesSeleccionadas.map(esp => esp.id) }
         : { subtitulo: inputSubtitulo, desc: markdownGenerado, id_diagnostico: diagnosticoId };
 
       const response = await fetch(endpoint, {
@@ -116,6 +150,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
         setInputTitulo('');
         setInputSubtitulo('');
         setDiagnosticoId('');
+        setEspecialidadesSeleccionadas([]);
         editorRef.current?.getInstance().setMarkdown('');
 
         if (!modoEdicion && tipoAgregar === 'diagnostico') {
@@ -174,10 +209,46 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
           )}
 
           {tipoAgregar === 'diagnostico' ? (
+            <>
             <div className="input-group">
               <label>Título</label>
               <input type="text" placeholder="Ej: Crisis Asmática..." className="form-input" value={inputTitulo} onChange={(e) => setInputTitulo(e.target.value)} />
             </div>
+            <div className="input-group multi-select-group" style={{ position: 'relative' }}>
+                <label>Vincular Especialidades</label>
+                <input 
+                  type="text" 
+                  className="form-input" 
+                  placeholder="Buscar especialidad para asociar..."
+                  value={busquedaEsp}
+                  onChange={e => {
+                    setBusquedaEsp(e.target.value);
+                    setMostrarListaEsp(true);
+                  }}
+                  onFocus={() => setMostrarListaEsp(true)}
+                  onBlur={() => setTimeout(() => setMostrarListaEsp(false), 200)} 
+                />
+                
+                {mostrarListaEsp && opcionesEspecialidadesFiltradas.length > 0 && (
+                  <ul className="dropdown-opciones">
+                    {opcionesEspecialidadesFiltradas.map(esp => (
+                      <li key={esp.id} className="dropdown-item" onClick={() => handleSeleccionarEspecialidad(esp)}>
+                        {esp.nombre}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                
+                <div className="tags-display">
+                  {especialidadesSeleccionadas.map(esp => (
+                    <span key={esp.id} className="tag-item">
+                      {esp.nombre}
+                      <button type="button" onClick={() => handleQuitarEspecialidad(esp.id)} className="tag-close">✕</button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </>
           ) : (
             <div className="input-group">
               <label>Subtítulo</label>

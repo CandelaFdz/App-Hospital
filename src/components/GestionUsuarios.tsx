@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 interface GestionUsuariosProps {
   onVolver: () => void;
   onCrearUsuario: () => void;
+  onEditarUsuario: (usuario: Usuario) => void; 
 }
 
 interface Usuario {
@@ -13,7 +14,7 @@ interface Usuario {
   is_admin: boolean;
 }
 
-export const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ onVolver, onCrearUsuario }) => {
+export const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ onVolver, onCrearUsuario, onEditarUsuario }) => {
   const [busqueda, setBusqueda] = useState('');
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -73,7 +74,12 @@ export const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ onVolver, onCr
             <p className="estado-lista">No se encontraron usuarios.</p>
           ) : (
             usuariosFiltrados.map(usuario => (
-              <div key={usuario.id} className="usuario-card">
+              <div 
+                key={usuario.id} 
+                className="usuario-card"
+                onClick={() => onEditarUsuario(usuario)} 
+                style={{ cursor: 'pointer' }} 
+              >
                 <div className="card-text">
                   <p className="usuario-nombre">
                     {usuario.nombre} {usuario.apellido}

@@ -116,6 +116,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
           localStorage.removeItem('usuario_hospital');
           setVistaActual('inicio');
         }}
+        ocultarBotonLogin={mostrarLogin}
       />
 
       <main className={`main-content ${vistaActual !== 'inicio' || mostrarLogin ? 'modo-lectura' : ''}`}>
@@ -183,12 +184,25 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
 
             {vistaActual === 'crear' && Boolean(usuarioLogueado?.is_admin) && (
               tipoFormulario === 'usuario' ? (
-                <GestionUsuarios
-                  onVolver={() => setVistaActual('inicio')}
-                  onCrearUsuario={() => setTipoFormulario('crear_usuario')}
-                />
+              <GestionUsuarios 
+                onVolver={() => setVistaActual('inicio')}
+                onCrearUsuario={() => {
+                setModoEdicion(false);
+                setDatosEdicion(null);
+                setTipoFormulario('crear_usuario');
+              }} 
+              onEditarUsuario={(usuarioSeleccionado) => {
+                setModoEdicion(true);
+                setDatosEdicion(usuarioSeleccionado);
+                setTipoFormulario('crear_usuario');
+              }}
+              />
               ) : tipoFormulario === 'crear_usuario' ? (
-                <FormularioUsuario onVolver={() => setTipoFormulario('usuario')} />
+                <FormularioUsuario 
+                onVolver={() => setTipoFormulario('usuario')} 
+                modoEdicion={modoEdicion}
+                datosIniciales={datosEdicion}
+              />
               ) : tipoFormulario === 'especialidad' ? (
                 <GestionEspecialidades onVolver={() => setVistaActual('inicio')} />
               ) : (

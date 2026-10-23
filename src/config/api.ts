@@ -5,4 +5,3 @@ if (!apiUrl) {
 }
 
 export const API_URL = apiUrl.replace(/\/$/, '');
-export const SYNC_USER_ID = import.meta.env.VITE_SYNC_USER_ID?.trim() || '0';

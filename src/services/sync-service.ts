@@ -1,6 +1,6 @@
 import { higaDb } from '../db/higa-db';
 import type { DiagnosticoLocal, ProtocoloLocal } from '../db/types';
-import { API_URL, SYNC_USER_ID } from '../config/api';
+import { API_URL } from '../config/api';
 
 interface SyncResponse {
   nro_sync: string;
@@ -19,6 +19,13 @@ interface SyncChanges {
 
 export interface SyncResult {
   huboCambios: boolean;
+}
+
+export interface UsuarioSesion {
+  id: string | number;
+  nombre?: string;
+  apellido?: string;
+  is_admin?: boolean;
 }
 
 type ProtocoloRemoto = Omit<ProtocoloLocal, 'id_diagnostico'> & {
@@ -49,7 +56,11 @@ const guardarDiagnostico = (diagnostico: DiagnosticoRemoto) => {
   };
 };
 
-export const sincronizarDatos = async (): Promise<SyncResult> => {
+export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<SyncResult> => {
+  if (!usuario?.id) {
+    throw new Error('No se puede sincronizar sin una sesión iniciada');
+  }
+
   const metadata = await higaDb.metadata.get(SYNC_CURSOR_KEY);
   const cursor = metadata?.valor ?? '0';
   const [diagnosticosLocales, protocolosLocales] = await Promise.all([
@@ -58,7 +69,7 @@ export const sincronizarDatos = async (): Promise<SyncResult> => {
   ]);
   const necesitaCargaInicial = diagnosticosLocales === 0 || protocolosLocales === 0;
   const response = await fetch(
-    `${API_URL}/sync?id=${encodeURIComponent(SYNC_USER_ID)}&sync=${encodeURIComponent(cursor)}`
+    `${API_URL}/sync?id=${encodeURIComponent(String(usuario.id))}&sync=${encodeURIComponent(cursor)}`
   );
 
   if (!response.ok) {

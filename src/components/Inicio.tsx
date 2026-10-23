@@ -10,7 +10,7 @@ import { FormularioUsuario } from './FormUsuarios';
 import { GestionEspecialidades } from './GestionEspecialidades';
 import { Login } from './Login';
 import { obtenerDiagnosticosConProtocolos } from '../db/protocolos-repository';
-import { sincronizarDatos } from '../services/sync-service';
+import { sincronizarDatos, type UsuarioSesion } from '../services/sync-service';
 import type { DiagnosticoConProtocolo } from '../db/types';
 
 interface InicioProps {
@@ -36,10 +36,33 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
   const [mensajeSincronizacion, setMensajeSincronizacion] = useState('');
   const [estadoSincronizacion, setEstadoSincronizacion] = useState<EstadoSincronizacion | null>(null);
   const [mostrarLogin, setMostrarLogin] = useState(false);
-  const [usuarioLogueado, setUsuarioLogueado] = useState<any>(() => {
-  const usuarioGuardado = localStorage.getItem('usuario_hospital');
-  return usuarioGuardado ? JSON.parse(usuarioGuardado) : null;
-});
+  const [usuarioLogueado, setUsuarioLogueado] = useState<UsuarioSesion | null>(() => {
+    const usuarioGuardado = localStorage.getItem('usuario_hospital');
+    if (!usuarioGuardado) return null;
+
+    try {
+      const sesion = JSON.parse(usuarioGuardado) as Partial<UsuarioSesion>;
+      if (!sesion.id) {
+        localStorage.removeItem('usuario_hospital');
+        return null;
+      }
+      return sesion as UsuarioSesion;
+    } catch {
+      localStorage.removeItem('usuario_hospital');
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (!mensajeSincronizacion) return;
+
+    const temporizador = window.setTimeout(() => {
+      setMensajeSincronizacion('');
+      setEstadoSincronizacion(null);
+    }, 10000);
+
+    return () => window.clearTimeout(temporizador);
+  }, [mensajeSincronizacion]);
 
   useEffect(() => {
     let activo = true;
@@ -56,11 +79,11 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
     };
 
     const sincronizarYRecargar = async (mostrarResultado = false) => {
-      if (sincronizando) return;
+      if (!usuarioLogueado) return;
 
       setSincronizando(true);
       try {
-        await sincronizarDatos();
+        await sincronizarDatos(usuarioLogueado);
         if (mostrarResultado && activo) {
           setMensajeSincronizacion('Datos sincronizados correctamente.');
         }
@@ -86,7 +109,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
     return () => {
       activo = false;
     };
-  }, []);
+  }, [usuarioLogueado]);
 
   const handleCardClick = (tarjeta: DiagnosticoConProtocolo) => {
     setProtocoloSeleccionado(tarjeta);
@@ -139,12 +162,18 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
                     className="btn"
                     type="button"
                     onClick={() => {
+                      if (!usuarioLogueado) {
+                        setMensajeSincronizacion('Inicia sesión para sincronizar los datos.');
+                        setEstadoSincronizacion('error');
+                        return;
+                      }
+
                       setMensajeSincronizacion('');
                       setEstadoSincronizacion(null);
                       void (async () => {
                         setSincronizando(true);
                         try {
-                          const resultado = await sincronizarDatos();
+                          const resultado = await sincronizarDatos(usuarioLogueado);
                           setMensajeSincronizacion(
                             resultado.huboCambios
                               ? 'Datos sincronizados correctamente.'
@@ -165,9 +194,13 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
                         }
                       })();
                     }}
-                    disabled={sincronizando}
+                    disabled={sincronizando || !usuarioLogueado}
                   >
-                    {sincronizando ? 'Sincronizando...' : 'Sincronizar ahora'}
+                    {sincronizando
+                      ? 'Sincronizando...'
+                      : usuarioLogueado
+                        ? 'Sincronizar ahora'
+                        : 'Inicia sesión para sincronizar'}
                   </button>
                   {mensajeSincronizacion && (
                     <div className={`sync-message sync-message-${estadoSincronizacion ?? 'exito'}`} role="status">

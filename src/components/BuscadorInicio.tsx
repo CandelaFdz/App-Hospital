@@ -8,14 +8,18 @@ interface BuscadorInicioProps {
 
 export const BuscadorInicio: React.FC<BuscadorInicioProps> = ({ tarjetas, onCardClick }) => {
 	const [searchTerm, setSearchTerm] = useState<string>('');
+  const normalizarTexto = (texto: string) =>
+    texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
 
 	// en tarjetasFiltradas se guardan las tarjetas según el término de búsqueda normalizado
   const tarjetasFiltradas = tarjetas.filter((tarjeta) => {
-  	const term = searchTerm.trim().toLowerCase();
-    const coincideTitulo = tarjeta.titulo.toLowerCase().includes(term);
-    const coincideSubtitulo = tarjeta.protocolo?.subtitulo?.toLowerCase().includes(term);
+  	const term = normalizarTexto(searchTerm.trim());
+    const coincideTitulo = normalizarTexto(tarjeta.titulo).includes(term);
+    const coincideSubtitulo = tarjeta.protocolo
+      ? normalizarTexto(tarjeta.protocolo.subtitulo).includes(term)
+      : false;
     const coincideEtiqueta = Array.isArray(tarjeta.etiquetas) && tarjeta.etiquetas.some(
-      (etiqueta: string) => etiqueta.toLowerCase().includes(term)
+      (etiqueta: string) => normalizarTexto(etiqueta).includes(term)
     );
     return coincideTitulo || coincideSubtitulo || coincideEtiqueta;
   });

@@ -257,7 +257,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
           )}
 
           <div className="input-group">
-            <label>Info</label>
+            <label>Información</label>
             <div className="editor-wrapper">
               <Editor
                 ref={editorRef}

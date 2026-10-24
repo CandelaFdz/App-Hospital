@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 
 interface GestionEspecialidadesProps {
   onVolver: () => void; 
@@ -29,7 +30,7 @@ export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ on
   const cargarEspecialidades = async () => {
     setCargando(true);
     try {
-      const response = await fetch('http://localhost:3000/especialidades');
+      const response = await fetch(`${API_URL}/especialidades`);
       if (response.ok) {
         const data = await response.json();
         setEspecialidadesDb(data);
@@ -91,8 +92,8 @@ export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ on
     try {
       const isEdicion = idEditando !== null;
       const url = isEdicion 
-        ? `http://localhost:3000/especialidades/${idEditando}` 
-        : 'http://localhost:3000/especialidades';
+        ? `${API_URL}/especialidades/${idEditando}` 
+        : `${API_URL}/especialidades`;
       
       const response = await fetch(url, {
         method: isEdicion ? 'PATCH' : 'POST',
@@ -125,7 +126,7 @@ export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ on
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/especialidades/${idEditando}`, {
+      const response = await fetch(`${API_URL}/especialidades/${idEditando}`, {
         method: 'DELETE'
       });
       if (response.ok) {

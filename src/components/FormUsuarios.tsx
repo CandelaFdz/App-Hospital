@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 
 interface FormularioUsuarioProps {
   onVolver: () => void;
@@ -83,7 +84,7 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver, 
     }
     
     try {
-      const url = modoEdicion ? `http://localhost:3000/usuarios/${datosIniciales.id}` : 'http://localhost:3000/usuarios';
+      const url = modoEdicion ? `${API_URL}/usuarios/${datosIniciales.id}` : `${API_URL}/usuarios`;
       const method = modoEdicion ? 'PATCH' : 'POST';
 
       const response = await fetch(url, {
@@ -114,7 +115,7 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver, 
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/usuarios/${datosIniciales.id}`, {
+      const response = await fetch(`${API_URL}/usuarios/${datosIniciales.id}`, {
         method: 'DELETE'
       });
 

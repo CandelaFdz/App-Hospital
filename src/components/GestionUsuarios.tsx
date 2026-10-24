@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from '../config/api';
 
 interface GestionUsuariosProps {
   onVolver: () => void;
@@ -22,7 +23,7 @@ export const GestionUsuarios: React.FC<GestionUsuariosProps> = ({ onVolver, onCr
   useEffect(() => {
     const fetchUsuarios = async () => {
       try {
-        const response = await fetch('http://localhost:3000/usuarios');
+        const response = await fetch(`${API_URL}/usuarios`);
         if (response.ok) {
           const data = await response.json();
           setUsuarios(data);

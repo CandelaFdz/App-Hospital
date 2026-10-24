@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_URL } from '../config/api';
 
 interface LoginProps {
   onLoginSuccess: (usuario: any) => void;
@@ -13,7 +14,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onCancelar }) => {
 
   const handleIngresar = async () => {
     try {
-      const response = await fetch('http://localhost:3000/usuarios/login', {
+      const response = await fetch(`${API_URL}/usuarios/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })

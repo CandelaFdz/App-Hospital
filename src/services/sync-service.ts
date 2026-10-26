@@ -4,17 +4,13 @@ import { API_URL } from '../config/api';
 
 interface SyncResponse {
   nro_sync: string;
-  created: SyncChanges;
-  updated: SyncChanges;
+  reset: boolean;
+  diagnosticos: DiagnosticoRemoto[];
+  protocolos: ProtocoloRemoto[];
   deleted: {
     diagnosticos: string[];
     protocolos: string[];
   };
-}
-
-interface SyncChanges {
-  diagnosticos: DiagnosticoRemoto[];
-  protocolos: ProtocoloRemoto[];
 }
 
 export interface SyncResult {
@@ -39,11 +35,23 @@ type DiagnosticoRemoto = DiagnosticoLocal & {
 const SYNC_CURSOR_KEY = 'sync_cursor';
 
 const validarRespuesta = (respuesta: unknown): SyncResponse => {
-  if (!respuesta || typeof respuesta !== 'object' || !('nro_sync' in respuesta)) {
+  if (!respuesta || typeof respuesta !== 'object') {
     throw new Error('La respuesta de sincronización no tiene el formato esperado');
   }
 
-  return respuesta as SyncResponse;
+  const datos = respuesta as Partial<SyncResponse>;
+  if (
+    typeof datos.nro_sync !== 'string' ||
+    !Array.isArray(datos.diagnosticos) ||
+    !Array.isArray(datos.protocolos) ||
+    !datos.deleted ||
+    !Array.isArray(datos.deleted.diagnosticos) ||
+    !Array.isArray(datos.deleted.protocolos)
+  ) {
+    throw new Error('La respuesta de sincronización no tiene el formato esperado');
+  }
+
+  return datos as SyncResponse;
 };
 
 const guardarDiagnostico = (diagnostico: DiagnosticoRemoto) => {
@@ -77,8 +85,8 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
   }
 
   const data = validarRespuesta(await response.json());
-  let diagnosticosRemotos = [...data.created.diagnosticos, ...data.updated.diagnosticos];
-  let protocolosRemotos = [...data.created.protocolos, ...data.updated.protocolos];
+  let diagnosticosRemotos = data.diagnosticos;
+  let protocolosRemotos = data.protocolos;
   let huboCambios =
     diagnosticosRemotos.length > 0 ||
     protocolosRemotos.length > 0 ||

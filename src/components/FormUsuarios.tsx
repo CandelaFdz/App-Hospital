@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config/api';
+import { mostrarConfirmacion, mostrarToast } from './Alertas';
 
 interface FormularioUsuarioProps {
   onVolver: () => void;
@@ -7,76 +8,102 @@ interface FormularioUsuarioProps {
   datosIniciales?: any; 
 }
 
+interface EspecialidadDb {
+  id: string;
+  nombre: string;
+}
+
 export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver, modoEdicion, datosIniciales }) => {
-  const [nombre, setNombre] = useState(datosIniciales?.nombre || '');
-  const [apellido, setApellido] = useState(datosIniciales?.apellido || '');
-  const [username, setUsername] = useState(datosIniciales?.username || '');
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState(''); 
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mostrarPassword, setMostrarPassword] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(datosIniciales?.is_admin || false);
+  const [isAdmin, setIsAdmin] = useState(false);
   
-  const [especialidades, setEspecialidades] = useState<string[]>(
-    datosIniciales?.especialidades ? datosIniciales.especialidades.map((e: any) => e.nombre || e) : []
-  );
-  
+  const [especialidadesSeleccionadas, setEspecialidadesSeleccionadas] = useState<EspecialidadDb[]>([]);
+  const [especialidadesDb, setEspecialidadesDb] = useState<EspecialidadDb[]>([]);
+
   const [busquedaEsp, setBusquedaEsp] = useState('');
   const [mostrarLista, setMostrarLista] = useState(false);
+
+  useEffect(() => {
+    const cargarEspecialidades = async () => {
+      try {
+        const response = await fetch(`${API_URL}/especialidades`);
+        if (response.ok) {
+          const data = await response.json();
+          setEspecialidadesDb(data);
+        }
+      } catch (error) {
+        console.error("Error al cargar especialidades:", error);
+      }
+    };
+    cargarEspecialidades();
+  }, []);
 
   useEffect(() => {
     setNombre(datosIniciales?.nombre || '');
     setApellido(datosIniciales?.apellido || '');
     setUsername(datosIniciales?.username || '');
     setIsAdmin(datosIniciales?.is_admin || false);
-    setEspecialidades(
-      datosIniciales?.especialidades 
-        ? datosIniciales.especialidades.map((e: any) => e.nombre || e) 
-        : []
-    );
+    
+    
+    const especialidadesLimpia = (datosIniciales?.especialidades || [])
+      .map((esp: any) => {
+        if (esp && esp.especialidad) return esp.especialidad;
+        return esp;
+      })
+      .filter((e: any) => typeof e === 'object' && e !== null && e.id !== undefined); 
+
+    setEspecialidadesSeleccionadas(especialidadesLimpia);
     
     setPassword('');
     setConfirmPassword('');
   }, [datosIniciales]);
   
-  const opcionesEspecialidad = ['Cardiología', 'Neurología', 'Neumonología', 'Terapia Intensiva', 'Pediatría', 'Traumatología', 'Ginecología', 'Cirugía General'];
-
-  const opcionesFiltradas = opcionesEspecialidad.filter(esp => 
-    esp.toLowerCase().includes(busquedaEsp.toLowerCase()) && !especialidades.includes(esp)
+  const opcionesFiltradas = especialidadesDb.filter(esp => 
+    esp.nombre.toLowerCase().includes(busquedaEsp.toLowerCase()) && 
+    !especialidadesSeleccionadas.some(seleccionada => String(seleccionada.id) === String(esp.id))
   );
 
-  const handleSeleccionarEspecialidad = (seleccion: string) => {
-    setEspecialidades([...especialidades, seleccion]);
+  const handleSeleccionarEspecialidad = (esp: EspecialidadDb) => {
+    setEspecialidadesSeleccionadas([...especialidadesSeleccionadas, esp]);
     setBusquedaEsp(''); 
     setMostrarLista(false); 
   };
 
-  const handleQuitarEspecialidad = (espQuitar: string) => {
-    setEspecialidades(especialidades.filter(esp => esp !== espQuitar));
+  const handleQuitarEspecialidad = (idQuitar: string) => {
+    setEspecialidadesSeleccionadas(especialidadesSeleccionadas.filter(esp => String(esp.id) !== String(idQuitar)));
   };
 
   const handleGuardarUsuario = async () => {
     if (password !== confirmPassword) {
-      alert("Error: Las contraseñas no coinciden. Por favor, verifícalas.");
+      mostrarToast("Las contraseñas no coinciden. Por favor, verifícalas.", "error");
       return;
     }
 
-    // la contraseña solo es obligatoria si es un usuario nuevo, no se si es coveniente que se vea la anterior o no
     if (!modoEdicion && password.trim() === '') {
-      alert("Error: La contraseña es obligatoria para un nuevo usuario.");
+      mostrarToast("Error: La contraseña es obligatoria para un nuevo usuario.", "error");
       return;
     }
 
     if (!username.trim()) {
-      alert("Error: El nombre de usuario es obligatorio.");
+      mostrarToast("Error: El nombre de usuario es obligatorio.", "error");
       return;
     }
+    
+    const idsEspecialidades = especialidadesSeleccionadas
+      .filter(esp => esp && esp.id !== undefined) 
+      .map(esp => String(esp.id));
     
     const datosUsuario: any = {
       username,
       nombre,
       apellido,
       is_admin: isAdmin,
-      especialidades
+      especialidades: idsEspecialidades
     };
 
     if (password.trim() !== '') {
@@ -96,40 +123,45 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver, 
       });
 
       if (response.ok) {
-        alert(modoEdicion ? "¡Usuario actualizado con éxito!" : "¡Usuario creado con éxito en la base de datos!");
+        mostrarToast(modoEdicion ? "¡Usuario actualizado con éxito!" : "¡Usuario creado con éxito en la base de datos!", "success");
         onVolver();
       } else {
         const errorData = await response.json();
         console.error("Detalles del error del servidor:", errorData);
-        alert(`Error al guardar el usuario: ${errorData.message || 'Revisa la consola'}`);
+        mostrarToast(`Error al guardar el usuario: ${errorData.message || 'Revisa la consola'}`, "error");
       }
     } catch (error) {
       console.error("Error de conexión:", error);
-      alert("No se pudo conectar con el servidor (backend).");
+      mostrarToast("No se pudo conectar con el servidor (backend).", "error");
     }
   };
 
   const handleEliminarUsuario = async () => {
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar al usuario @${username}? Esta acción no se puede deshacer.`)) {
-      return;
-    }
+    mostrarConfirmacion(
+      '',
+      `¿Estás seguro de que deseas eliminar al usuario @${username}? Esta acción no se puede deshacer.`,
+      'Sí, eliminar',
+      'warning'
+    ).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch(`${API_URL}/usuarios/${datosIniciales.id}`, {
+            method: 'DELETE'
+          });
 
-    try {
-      const response = await fetch(`${API_URL}/usuarios/${datosIniciales.id}`, {
-        method: 'DELETE'
-      });
-
-      if (response.ok) {
-        alert("Usuario eliminado correctamente.");
-        onVolver();
-      } else {
-        alert("Error al intentar eliminar el usuario.");
+          if (response.ok) {
+            mostrarToast("Usuario eliminado correctamente.", "success");
+            onVolver();
+          } else {
+            mostrarToast("Error al intentar eliminar el usuario.", "error");
+          }
+        } catch (error) {
+          mostrarToast("Error de conexión con el servidor.", "error");
+        }
       }
-    } catch (error) {
-      alert("Error de conexión con el servidor.");
-    }
+    });
   };
-
+  
   const TrashIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6"></polyline>
@@ -138,7 +170,6 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver, 
       <line x1="14" y1="11" x2="14" y2="17"></line>
     </svg>
   );
-
 
   return (
     <section className="protocol-form-section">
@@ -221,22 +252,23 @@ export const FormularioUsuario: React.FC<FormularioUsuarioProps> = ({ onVolver, 
             <ul className="dropdown-opciones">
               {opcionesFiltradas.map(esp => (
                 <li 
-                  key={esp} 
+                  key={esp.id} 
                   className="dropdown-item"
                   onClick={() => handleSeleccionarEspecialidad(esp)}
                 >
-                  {esp}
+                  {esp.nombre}
                 </li>
               ))}
             </ul>
           )}
           
           <div className="tags-display">
-            {especialidades.map(esp => (
-              <span key={esp} className="tag-item">
-                {esp}
+            {especialidadesSeleccionadas.map(esp => (
+              <span key={esp.id} className="tag-item">
+                {esp.nombre}
                 <button 
-                  onClick={() => handleQuitarEspecialidad(esp)}
+                  type="button"
+                  onClick={() => handleQuitarEspecialidad(esp.id)}
                   className="tag-close"
                 >
                   ✕

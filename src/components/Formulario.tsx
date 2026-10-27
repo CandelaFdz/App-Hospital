@@ -1,7 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Editor } from '@toast-ui/react-editor';
 import '@toast-ui/editor/dist/toastui-editor.css';
+import '@toast-ui/editor/dist/i18n/es-es';
 import { API_URL } from '../config/api';
+import { mostrarConfirmacion, mostrarToast } from './Alertas';
 
 interface FormularioCreacionProps {
   tipoInicial: 'protocolo' | 'diagnostico';
@@ -91,15 +93,18 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
     const nombreRecurso = tipoAgregar === 'diagnostico' ? 'diagnóstico' : 'protocolo';
 
     //Mensaje de alerta antes de eliminar (no se puede deshacer)
-    if (!window.confirm(`¿Está seguro de que desea eliminar este ${nombreRecurso}? Esta acción no se puede deshacer.`)) {
-      return;
-    }
-
-    setEliminando(true);
-    try {
-      const response = await fetch(`${API_URL}/${recurso}/${id}`, {
-        method: 'DELETE',
-      });
+   mostrarConfirmacion(
+    '',
+    `¿Está seguro de que desea eliminar este ${nombreRecurso}? Esta acción no se puede deshacer.`,
+    'Sí, eliminar',
+    'warning'
+      ).then(async (result) => {
+    if (result.isConfirmed) {
+      setEliminando(true);
+      try {
+        const response = await fetch(`${API_URL}/${recurso}/${id}`, {
+          method: 'DELETE',
+       });
 
       if (!response.ok) {
         const errorResponse = await response.json().catch(() => null) as { message?: string } | null;
@@ -109,10 +114,12 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
       onVolver();
     } catch (error) {
       console.error(`Error al eliminar el ${nombreRecurso}:`, error);
-      window.alert(error instanceof Error ? error.message : `No se pudo eliminar el ${nombreRecurso}.`);
+      mostrarToast(error instanceof Error ? error.message : `No se pudo eliminar el ${nombreRecurso}.`, "error");
     } finally {
       setEliminando(false);
+      }
     }
+  });
   };
 
   
@@ -267,9 +274,10 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
                 initialEditType="wysiwyg"
                 hideModeSwitch={true} 
                 useCommandShortcut={true}
+                language="es-ES"
                 toolbarItems={[
                   ['heading', 'bold', 'italic'],
-                  ['hr', 'quote'],
+                  ['hr'],
                   ['ul', 'ol'],
                   ['table']
                 ]}

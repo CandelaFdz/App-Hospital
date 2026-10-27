@@ -231,7 +231,6 @@ body {
   border-radius: 20px ; 
   flex: 1;
   overflow-y: auto;
-  max-height: 400px;
   min-height: 0;
   box-shadow: 0 4px 12px var(--sombra-azul);
 }
@@ -395,11 +394,7 @@ body {
   box-shadow: 0 0 0 3px rgba(23, 54, 71, 0.15);
 }
 
-.form-textarea {
-  resize: vertical;
-  min-height: 120px;
-  line-height: 1.5;
-}
+
 
 .form-file-input {
   font-size: 0.8rem;
@@ -727,12 +722,44 @@ body {
   border-radius: 8px;
 }
 
+.contenido-markdown {
+  box-sizing: border-box;
+  max-width: 95%; 
+  margin: 0 auto;   
+}
+
+.contenido-markdown h3 {
+  font-weight: 600 ; 
+  color: var(--gris) ;
+}
+
+
+.contenido-markdown p,
+.contenido-markdown ul,
+.contenido-markdown li {
+  white-space: pre-wrap;
+  line-height: 1.75;      
+  font-size: 1.05rem;    
+  color: var(--texto-oscuro);
+}
+
+
+
 .contenido-markdown table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
+  
   margin-bottom: 1rem;
   font-size: 0.95rem;
+}
+
+.toastui-editor-popup-add-heading li[data-level="5"],
+.toastui-editor-popup-add-heading li[data-level="6"] {
+  display: none !important;
+}
+
+.toastui-editor-popup-add-heading li[data-level="paragraph"]{
+  color: red !important;
 }
 
 .contenido-markdown th,
@@ -751,7 +778,7 @@ body {
 .editor-wrapper {
   background-color: var(--blanco-puro);
   border-radius: 12px;
-  overflow: hidden;
+  
   border: 1px solid var(--borde-claro);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
@@ -762,7 +789,7 @@ body {
   box-shadow: 0 0 0 3px rgba(44, 86, 103, 0.15);
 }
 
-/* es para marcar que boton esta encendio: BORRAR SI NO FUNCIONA EN CELULAR*/
+
 .toastui-editor-defaultUI .toastui-editor-toolbar .toastui-editor-toolbar-group button.active {
   background-color: var(--celeste-suave, #E2F1F6) !important;
   color: var(--azul-profundo, #2C5667) !important;
@@ -773,6 +800,7 @@ body {
 .toastui-editor-defaultUI .toastui-editor-toolbar .toastui-editor-toolbar-group button {
   transition: all 0.2s ease;
 }
+
 
 
 .lista-usuarios {
@@ -811,8 +839,8 @@ body {
 
 .usuario-nombre {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: var(--texto-oscuro);
 }
 
@@ -845,13 +873,6 @@ body {
   position: relative;
 }
 
-.user-trigger {
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  font: inherit;
-}
 
 .dropdown-menu {
   position: absolute;
@@ -887,4 +908,46 @@ body {
 
 .btn-login-header:active {
   transform: scale(0.96);
+}
+
+/* =========================================
+   ALERTAS Y MODALES (SWEETALERT2)
+========================================= */
+.swal2-medical-popup {
+  border-radius: 16px ;
+  font-family: system-ui, -apple-system, sans-serif;
+  border: 1px solid var(--borde-claro);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); 
+  padding: 1.5rem;
+  max-width: 95%;
+}
+
+.swal2-medical-title {
+  font-family: inherit; 
+  font-size: 1rem;
+  color: var(--azul); 
+  font-weight: 800;
+}
+
+.swal2-medical-popup .swal2-html-container {
+  font-size: 0.90rem; 
+  line-height: 1.5;
+  color: var(--texto-oscuro);
+}
+
+.swal2-icon.swal2-warning {
+  border-color: var(--rojo-alerta); 
+  color: var(--rojo-alerta);
+}
+
+.swal2-icon.swal2-info {
+  border-color: var(--celeste);
+  color: var(--celeste);
+}
+
+.btn-confirmar {
+  background-color: var(--celeste);
+  color: var(--blanco-puro);
+  border-color: var(--celeste);
+  margin-left: 1rem; 
 }

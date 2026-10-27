@@ -237,7 +237,20 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
                 datosIniciales={datosEdicion}
               />
               ) : tipoFormulario === 'especialidad' ? (
-                <GestionEspecialidades onVolver={() => setVistaActual('inicio')} />
+                <GestionEspecialidades 
+                  onVolver={() => setVistaActual('inicio')} 
+                  onEditarDiagnostico={(diagnostico) => {
+                  const diagnosticoCompleto = tarjetas.find(t => String(t.id) === String(diagnostico.id));
+                  if (diagnosticoCompleto) {
+                    setTipoFormulario('diagnostico');
+                    setModoEdicion(true);
+                    setDatosEdicion(diagnosticoCompleto); 
+                    setVistaActual('crear');
+                    } else {
+                      alert("Hubo un error al buscar los detalles del diagnóstico.");
+                     }
+                    }}
+                  />
               ) : (
                 <FormularioCreacion
                   tipoInicial={tipoFormulario}

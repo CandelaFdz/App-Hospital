@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 interface VisorProtocoloProps {
   protocolo: any;
@@ -20,6 +21,7 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
   const protocoloAsociado = protocolo?.protocolo;
   const imagenesDiagnostico = protocolo?.imagenes ?? (protocolo?.imagen ? [protocolo.imagen] : []);
   const etiquetas: string[] = Array.isArray(protocolo?.etiquetas) ? protocolo.etiquetas : [];
+  
 
   return (
     <section className="protocol-info-">
@@ -57,7 +59,7 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
           )}
           
           <div className="contenido-markdown">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{protocolo?.desc || 'Detalle del diagnóstico no disponible'}</ReactMarkdown>
+            <ReactMarkdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>{protocolo?.desc || 'Detalle del diagnóstico no disponible'}</ReactMarkdown>
           </div>
           
           {imagenesDiagnostico.length > 0 && (
@@ -77,7 +79,7 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
             <h3>{protocoloAsociado.subtitulo || 'Subtítulo no disponible'}</h3>
 
             <div className="contenido-markdown" style={{ marginTop: '1rem' }}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{protocoloAsociado.desc || 'Contenido del protocolo no disponible'}</ReactMarkdown>
+              <ReactMarkdown rehypePlugins={[rehypeRaw]} remarkPlugins={[remarkGfm]}>{protocoloAsociado.desc || 'Contenido del protocolo no disponible'}</ReactMarkdown>
             </div>
           </>
         ) : (

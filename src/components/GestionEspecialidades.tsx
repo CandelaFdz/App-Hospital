@@ -1,91 +1,88 @@
 import React, { useState, useEffect } from 'react';
 import { API_URL } from '../config/api';
+import { mostrarConfirmacion, mostrarToast } from './Alertas';
 
-interface GestionEspecialidadesProps {
-  onVolver: () => void; 
+export interface DiagnosticoAsociado {
+  id: string;
+  titulo: string;
 }
 
 interface EspecialidadDb {
   id: string;
   nombre: string;
+  diagnosticos?: DiagnosticoAsociado[];
 }
 
-export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ onVolver }) => {
+interface GestionEspecialidadesProps {
+  onVolver: () => void; 
+  onEditarDiagnostico: (diagnostico: DiagnosticoAsociado) => void;
+}
+
+export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ onVolver, onEditarDiagnostico }) => {
   const [vistaLocal, setVistaLocal] = useState<'lista' | 'formulario'>('lista');
   const [busqueda, setBusqueda] = useState('');
-  
-  // Datos del formulario
   const [nombre, setNombre] = useState('');
-  const [idEditando, setIdEditando] = useState<string | null>(null); // Guardamos el ID si estamos editando
-  const [protocolosVinculados, setProtocolosVinculados] = useState<string[]>([]);
-  
-  // Buscador de protocolos
-  const [busquedaProt, setBusquedaProt] = useState('');
-  const [mostrarListaProt, setMostrarListaProt] = useState(false);
-  
-  // Datos de la base de datos
+  const [idEditando, setIdEditando] = useState<string | null>(null);
   const [especialidadesDb, setEspecialidadesDb] = useState<EspecialidadDb[]>([]);
+  const [diagnosticosVinculados, setDiagnosticosVinculados] = useState<DiagnosticoAsociado[]>([]);
   const [cargando, setCargando] = useState(true);
 
-  const cargarEspecialidades = async () => {
+  const cargarDatos = async () => {
     setCargando(true);
     try {
-      const response = await fetch(`${API_URL}/especialidades`);
-      if (response.ok) {
-        const data = await response.json();
-        setEspecialidadesDb(data);
-      }
+      const [resEsp, resDiag] = await Promise.all([
+        fetch(`${API_URL}/especialidades`),
+        fetch(`${API_URL}/diagnosticos`)
+      ]);
+      
+      let especialidades: EspecialidadDb[] = [];
+      let diagnosticosTotales: any[] = [];
+
+      if (resEsp.ok) especialidades = await resEsp.json();
+      if (resDiag.ok) diagnosticosTotales = await resDiag.json();
+
+      const especialidadesCompletas = especialidades.map(esp => {
+        if (esp.diagnosticos) return esp; 
+        
+        const vinculados = diagnosticosTotales.filter(diag => 
+          diag.especialidades?.some((e: any) => e.id === esp.id)
+        );
+        return { ...esp, diagnosticos: vinculados };
+      });
+
+      setEspecialidadesDb(especialidadesCompletas);
     } catch (error) {
-      console.error("Error de conexión al cargar especialidades:", error);
+      console.error("Error de conexión al cargar datos:", error);
     } finally {
       setCargando(false);
     }
   };
 
   useEffect(() => {
-    cargarEspecialidades();
+    cargarDatos();
   }, []);
-
-  const opcionesProtocolos = ['Crisis Asmática', 'ACV Isquémico', 'Infarto Agudo de Miocardio', 'Trauma de Cráneo', 'Sepsis'];
-
-  const opcionesFiltradas = opcionesProtocolos.filter(prot => 
-    prot.toLowerCase().includes(busquedaProt.toLowerCase()) && !protocolosVinculados.includes(prot)
-  );
 
   const especialidadesFiltradas = especialidadesDb.filter(esp => 
     esp.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
-
-  const handleSeleccionarProtocolo = (seleccion: string) => {
-    setProtocolosVinculados([...protocolosVinculados, seleccion]);
-    setBusquedaProt('');
-    setMostrarListaProt(false);
-  };
-
-  const handleQuitarProtocolo = (protQuitar: string) => {
-    setProtocolosVinculados(protocolosVinculados.filter(prot => prot !== protQuitar));
-  };
-
   
   const handleAbrirNuevo = () => {
     setIdEditando(null);
     setNombre('');
-    setProtocolosVinculados([]);
+    setDiagnosticosVinculados([]);
     setVistaLocal('formulario');
   };
 
- 
   const handleAbrirEdicion = (esp: EspecialidadDb) => {
     setIdEditando(esp.id);
     setNombre(esp.nombre);
-    setProtocolosVinculados([]); 
+    setDiagnosticosVinculados(esp.diagnosticos || []);
     setVistaLocal('formulario');
   };
 
-  // Guardar (POST) o Actualizar (PATCH) dependiendo si tenemos idEditando
   const handleGuardarEspecialidad = async () => {
     if (nombre.trim() === '') {
-      alert("Error: El nombre de la especialidad es obligatorio.");
+      mostrarToast("Error: El nombre de la especialidad es obligatorio.", "error");
       return;
     }
 
@@ -102,48 +99,68 @@ export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ on
       });
 
       if (response.ok) {
-        alert(isEdicion ? "Especialidad actualizada con éxito." : "Especialidad guardada con éxito.");
+        mostrarToast(isEdicion ? "Especialidad actualizada con éxito." : "Especialidad guardada con éxito.", "success");
         setNombre('');
         setIdEditando(null);
-        setProtocolosVinculados([]);
         setVistaLocal('lista');
-        cargarEspecialidades(); 
+        cargarDatos(); 
       } else {
         const errorData = await response.json();
-        alert(`Error al guardar: ${errorData.message || 'Error en el servidor'}`);
+        mostrarToast(`Error al guardar: ${errorData.message || 'Error en el servidor'}`, "error");
       }
     } catch (error) {
-      alert("Error de conexión con el backend.");
+      mostrarToast("Error de conexión con el backend.", "error");
     }
   };
 
-  // Mover el botón eliminar dentro del formulario
   const handleEliminarEspecialidad = async () => {
     if (!idEditando) return;
     
-    if (!window.confirm(`¿Seguro que deseas eliminar la especialidad "${nombre}"? Esta acción no se puede deshacer.`)) {
+    if (diagnosticosVinculados.length > 0) {
+      mostrarToast(`No puedes eliminar "${nombre}" porque tiene ${diagnosticosVinculados.length} diagnóstico(s) vinculados.`, 'error');
       return;
     }
 
-    try {
-      const response = await fetch(`${API_URL}/especialidades/${idEditando}`, {
-        method: 'DELETE'
-      });
-      if (response.ok) {
-        alert("Especialidad eliminada correctamente.");
-        setNombre('');
-        setIdEditando(null);
-        setVistaLocal('lista');
-        cargarEspecialidades();
-      } else {
-        alert("No se pudo eliminar. Es posible que tenga diagnósticos vinculados.");
+   mostrarConfirmacion(
+      'Eliminar Especialidad',
+      `¿Seguro que deseas eliminar la especialidad "${nombre}"? Esta acción no se puede deshacer.`,
+      'Sí, eliminar',
+      'warning'
+    ).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const response = await fetch(`${API_URL}/especialidades/${idEditando}`, {
+            method: 'DELETE'
+          });
+          if (response.ok) {
+            mostrarToast("Especialidad eliminada correctamente.", "success");
+            setNombre('');
+            setIdEditando(null);
+            setVistaLocal('lista');
+            cargarDatos();
+          } else {
+            mostrarToast("No se pudo eliminar por un error en el servidor.", "error");
+          }
+        } catch (error) {
+          mostrarToast("Error de conexión al intentar eliminar.", "error");
+        }
       }
-    } catch (error) {
-      alert("Error de conexión al intentar eliminar.");
-    }
+    });
   };
 
-  // icono de Papelera 
+
+  const handleDesasociarDiagnostico = (diag: DiagnosticoAsociado) => {
+    mostrarConfirmacion(
+      'Para desasociar este diagnóstico de la especialidad, debes editarlo.',
+      `¿Deseas ir a editar el diagnóstico "${diag.titulo}" para desvincularlo de esta especialidad? Saldrás de esta pantalla.`,
+      'Sí, ir a editar'
+    ).then((result) => {
+      if (result.isConfirmed) {
+        onEditarDiagnostico(diag);
+      }
+    });
+  };
+
   const TrashIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="3 6 5 6 21 6"></polyline>
@@ -171,10 +188,6 @@ export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ on
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
               />
-              <svg className="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1rem 0' }}>
@@ -221,40 +234,40 @@ export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ on
               />
             </div>
 
-            <div className="input-group multi-select-group" style={{ position: 'relative' }}>
-              <label>Vincular Protocolos (Opcional)</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="Buscar protocolo para asociar..."
-                value={busquedaProt}
-                onChange={e => {
-                  setBusquedaProt(e.target.value);
-                  setMostrarListaProt(true);
-                }}
-                onFocus={() => setMostrarListaProt(true)}
-                onBlur={() => setTimeout(() => setMostrarListaProt(false), 200)} 
-              />
-              
-              {mostrarListaProt && opcionesFiltradas.length > 0 && (
-                <ul className="dropdown-opciones">
-                  {opcionesFiltradas.map(prot => (
-                    <li key={prot} className="dropdown-item" onClick={() => handleSeleccionarProtocolo(prot)}>
-                      {prot}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              
-              <div className="tags-display">
-                {protocolosVinculados.map(prot => (
-                  <span key={prot} className="tag-item">
-                    {prot}
-                    <button type="button" onClick={() => handleQuitarProtocolo(prot)} className="tag-close">✕</button>
-                  </span>
-                ))}
+            
+            {idEditando && (
+              <div className="input-group" style={{ marginTop: '1rem' }}>
+                <label>Diagnósticos Asociados a esta Especialidad ({diagnosticosVinculados.length})</label>
+                
+                {diagnosticosVinculados.length === 0 ? (
+                  <p style={{ fontSize: '0.9rem', color: 'var(--gris)', margin: '0.5rem 0' }}>
+                    No hay diagnósticos vinculados a esta especialidad todavía.
+                  </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    {diagnosticosVinculados.map((diag) => (
+                      <div 
+                        className="usuario-card"
+                        key={diag.id} 
+                      >
+                        <span style={{ fontWeight: '600', color: 'var(--azul-profundo)', fontSize: '0.9rem' }}>
+                          {diag.titulo}
+                        </span>
+                        
+                        <button 
+                          className="btn"
+                          type="button"
+                          onClick={() => handleDesasociarDiagnostico(diag)}
+                          style={{ background: 'none', border: 'none', color: 'var(--celeste)', cursor: 'pointer', padding: 0 }}
+                        >
+                          Editar 
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '1rem' }}>
               <button className="btn-guardar" onClick={handleGuardarEspecialidad}>
@@ -263,15 +276,15 @@ export const GestionEspecialidades: React.FC<GestionEspecialidadesProps> = ({ on
 
               {idEditando && (
                 <button 
-                className="btn-eliminar"
-                type="button"
-                onClick={handleEliminarEspecialidad} 
+                  className="btn-eliminar"
+                  type="button"
+                  onClick={handleEliminarEspecialidad} 
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem'}}
                 >
                   <TrashIcon /> Eliminar Especialidad
                 </button>
               )}
             </div>
-
           </div>
         </>
       )}

@@ -15,6 +15,9 @@ interface FormularioCreacionProps {
 interface DiagnosticoOption {
   id: string | number;
   titulo: string;
+  protocolo?: {
+    id: string | number;
+  };
 }
 
 interface EspecialidadOption {
@@ -50,13 +53,22 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
   }, [tipoInicial, datosIniciales]);
 
   // Si el formulario es para cargar Protocolo, se van a buscar los diagnósticos disponibles para el desplegable de opciones
-    useEffect(() => {
-      if (tipoInicial !== 'protocolo') return;
-      fetch(`${API_URL}/diagnosticos`) 
-        .then((response) => response.ok ? response.json() : Promise.reject(response.status))
-        .then((data: DiagnosticoOption[]) => setDiagnosticos(data))
-        .catch((error) => console.error('Error al cargar diagnósticos:', error));
-    }, [tipoInicial]);
+  useEffect(() => {
+    if (tipoInicial !== 'protocolo') return;
+
+    fetch(`${API_URL}/diagnosticos`)
+      .then((response) => response.ok ? response.json() : Promise.reject(response.status))
+      .then((data: DiagnosticoOption[]) => {
+        const diagnosticoEnEdicion = modoEdicion && datosIniciales?.id_diagnostico !== undefined
+          ? String(datosIniciales.id_diagnostico)
+          : null;
+
+        setDiagnosticos(data.filter((diagnostico) =>
+          !diagnostico.protocolo || String(diagnostico.id) === diagnosticoEnEdicion
+        ));
+      })
+      .catch((error) => console.error('Error al cargar diagnósticos:', error));
+  }, [tipoInicial, modoEdicion, datosIniciales?.id_diagnostico]);
 
     useEffect(() => {
     fetch(`${API_URL}/especialidades`)

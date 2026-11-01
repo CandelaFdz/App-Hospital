@@ -54,7 +54,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
 
   // Si el formulario es para cargar Protocolo, se van a buscar los diagnósticos disponibles para el desplegable de opciones
   useEffect(() => {
-    if (tipoInicial !== 'protocolo') return;
+    if (tipoAgregar !== 'protocolo') return;
 
     fetch(`${API_URL}/diagnosticos`)
       .then((response) => response.ok ? response.json() : Promise.reject(response.status))
@@ -68,7 +68,7 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
         ));
       })
       .catch((error) => console.error('Error al cargar diagnósticos:', error));
-  }, [tipoInicial, modoEdicion, datosIniciales?.id_diagnostico]);
+  }, [tipoAgregar, modoEdicion, datosIniciales?.id_diagnostico]);
 
     useEffect(() => {
     fetch(`${API_URL}/especialidades`)
@@ -153,9 +153,24 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
         .map(tag => tag.trim())
         .filter(tag => tag !== '');
 
+      if (tipoAgregar === 'protocolo' && !diagnosticoId) {
+        mostrarToast('Seleccione un diagnóstico para asociar el protocolo.', 'error');
+        return;
+      }
+
+      if (!inputSubtitulo.trim() && tipoAgregar === 'protocolo') {
+        mostrarToast('El subtítulo del protocolo es obligatorio.', 'error');
+        return;
+      }
+
+      if (!markdownGenerado.trim()) {
+        mostrarToast('La información del protocolo o diagnóstico es obligatoria.', 'error');
+        return;
+      }
+
       const bodyData = tipoAgregar === 'diagnostico'
         ? { titulo: inputTitulo, desc: markdownGenerado, etiquetas: etiquetasArray, especialidades: especialidadesSeleccionadas.map(esp => esp.id) }
-        : { subtitulo: inputSubtitulo, desc: markdownGenerado, id_diagnostico: diagnosticoId };
+        : { subtitulo: inputSubtitulo.trim(), desc: markdownGenerado, id_diagnostico: diagnosticoId };
 
       const response = await fetch(endpoint, {
         method: modoEdicion ? 'PATCH' : 'POST',
@@ -166,6 +181,10 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
       });
 
       if (response.ok) {
+        const responseData = tipoAgregar === 'diagnostico'
+          ? await response.json() as { id?: string | number }
+          : null;
+
         setInputTitulo('');
         setInputSubtitulo('');
         setDiagnosticoId('');
@@ -173,15 +192,25 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
         editorRef.current?.getInstance().setMarkdown('');
 
         if (!modoEdicion && tipoAgregar === 'diagnostico') {
+          if (responseData?.id === undefined) {
+            throw new Error('El backend no devolvió el identificador del diagnóstico creado.');
+          }
+          setDiagnosticoId(String(responseData.id));
           setTipoAgregar('diagnostico_exito');
         } else {
           onVolver();
         }
       } else {
-        console.error("Error al guardar en la base de datos");
+        const errorData = await response.json().catch(() => null) as { message?: string | string[] } | null;
+        const message = Array.isArray(errorData?.message)
+          ? errorData.message.join(', ')
+          : errorData?.message;
+        console.error("Error al guardar en la base de datos:", errorData);
+        mostrarToast(`Error al guardar: ${message || 'Revisa los datos ingresados.'}`, 'error');
       }
     } catch (error) {
       console.error("Error de conexión con el backend:", error);
+      mostrarToast(error instanceof Error ? error.message : 'No se pudo conectar con el servidor.', 'error');
     }
   };
 
@@ -196,7 +225,11 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
           <h2 className="form-title">¡Diagnóstico guardado con éxito!</h2>
           <p style={{ color: 'var(--gris)', marginBottom: '1rem' }}>¿Desea redactar y asociar un protocolo a este diagnóstico ahora mismo?</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-            <button className="btn-guardar" style={{ width: '100%', maxWidth: '300px' }} onClick={() => setTipoAgregar('protocolo')}>
+            <button
+              className="btn-guardar"
+              style={{ width: '100%', maxWidth: '300px' }}
+              onClick={() => setTipoAgregar('protocolo')}
+            >
               Sí, agregar protocolo
             </button>
             <button className="btn" style={{ width: '100%', maxWidth: '300px'}} onClick={onVolver}>

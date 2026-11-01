@@ -728,19 +728,68 @@ body {
   margin: 0 auto;   
 }
 
+.contenido-markdown .toastui-editor-contents {
+  padding: 0;
+  font-family: inherit;
+  color: var(--texto-oscuro);
+}
+
+.contenido-markdown .toastui-editor-contents > :first-child {
+  margin-top: 0;
+}
+
+.contenido-markdown .toastui-editor-contents > :last-child {
+  margin-bottom: 0;
+}
+
 .contenido-markdown h3 {
   font-weight: 600 ; 
   color: var(--gris) ;
 }
 
 
-.contenido-markdown p,
-.contenido-markdown ul,
-.contenido-markdown li {
+.contenido-markdown p {
   white-space: pre-wrap;
   line-height: 1.75;      
   font-size: 1.05rem;    
   color: var(--texto-oscuro);
+}
+
+.contenido-markdown .toastui-editor-contents ul,
+.contenido-markdown .toastui-editor-contents ol {
+  margin: 0.75rem 0;
+  padding-left: 1.75rem;
+  color: var(--texto-oscuro);
+}
+
+.contenido-markdown .toastui-editor-contents ul {
+  list-style: disc;
+}
+
+.contenido-markdown .toastui-editor-contents ol {
+  list-style: decimal;
+}
+
+.contenido-markdown .toastui-editor-contents li {
+  position: static;
+  display: list-item;
+  margin: 0.25rem 0;
+  font-size: 1.05rem;
+  line-height: 1.75;
+  color: var(--texto-oscuro);
+  white-space: normal;
+}
+
+.contenido-markdown .toastui-editor-contents li::before {
+  content: none;
+}
+
+.contenido-markdown .toastui-editor-contents ul ul {
+  list-style: circle;
+}
+
+.contenido-markdown .toastui-editor-contents ol ol {
+  list-style: lower-alpha;
 }
 
 

@@ -688,6 +688,7 @@ body {
   border: 1px solid var(--borde-claro);
   border-radius: 12px;
   box-shadow: 0 4px 12px var(--sombra-azul);
+  
 }
 
 .diagnostico-detalle summary {
@@ -699,6 +700,7 @@ body {
 
 .diagnostico-detalle-contenido {
   padding: 0 1rem 1rem;
+  overflow: auto;
 }
 
 .diagnostico-detalle-contenido p {
@@ -797,9 +799,10 @@ body {
 .contenido-markdown table {
   width: 100%;
   border-collapse: collapse;
-  
   margin-bottom: 1rem;
   font-size: 0.95rem;
+  display: block; 
+  overflow-x: auto;
 }
 
 .toastui-editor-popup-add-heading li[data-level="5"],

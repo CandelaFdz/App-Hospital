@@ -226,7 +226,7 @@ body {
 
 .protocol-texto {
   background-color: var(--blanco);
-  margin: 1rem -0.5rem 0 -0.5rem; 
+  margin: 1rem 0 0 0; 
   padding: 1.5rem;
   border-radius: 20px ; 
   flex: 1;
@@ -531,7 +531,6 @@ body {
   color: var(--gris); 
   padding: 0.2rem 0.6rem; 
   border-radius: 20px;
-  font-size: 1rem; 
   font-weight: 600;
   border: 1px solid var(--celeste);
   gap: 0.5rem;
@@ -701,6 +700,7 @@ body {
 .diagnostico-detalle-contenido {
   padding: 0 1rem 1rem;
   overflow: auto;
+  max-height: 480px;
 }
 
 .diagnostico-detalle-contenido p {
@@ -744,17 +744,28 @@ body {
   margin-bottom: 0;
 }
 
-.contenido-markdown h3 {
-  font-weight: 600 ; 
-  color: var(--gris) ;
+.contenido-markdown .toastui-editor-contents h1,
+.contenido-markdown .toastui-editor-contents h2 {
+  color: var(--azul-profundo);
+  border-bottom: 2px solid var(--celeste-suave);
+  padding-bottom: 0.3rem;
+  margin-top: 1.25rem;
+  margin-bottom: 0.75rem;
 }
 
+.contenido-markdown .toastui-editor-contents h3 {
+  font-weight: 700; 
+  color: var(--azul);
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
 
-.contenido-markdown p {
+.contenido-markdown .toastui-editor-contents p {
   white-space: pre-wrap;
-  line-height: 1.75;      
-  font-size: 1.05rem;    
+  line-height: 1.65;      
+  font-size: 1rem;    
   color: var(--texto-oscuro);
+  margin-bottom: 0.85rem;
 }
 
 .contenido-markdown .toastui-editor-contents ul,
@@ -795,14 +806,68 @@ body {
 }
 
 
-
-.contenido-markdown table {
+.contenido-markdown .toastui-editor-contents table,
+.editor-wrapper .toastui-editor-contents table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 1rem;
+  margin: 1rem 0;
   font-size: 0.95rem;
-  display: block; 
+  display: block;
   overflow-x: auto;
+  border: none;
+}
+
+.contenido-markdown .toastui-editor-contents table th,
+.contenido-markdown .toastui-editor-contents table td,
+.editor-wrapper .toastui-editor-contents table th,
+.editor-wrapper .toastui-editor-contents table td {
+  border: 1px solid var(--borde-claro);
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+
+.contenido-markdown .toastui-editor-contents table th,
+.editor-wrapper .toastui-editor-contents table th {
+  background-color: var(--celeste-suave);
+  color: var(--azul-profundo);
+  font-weight: 700;
+}
+
+.contenido-markdown .toastui-editor-contents table td,
+.editor-wrapper .toastui-editor-contents table td {
+  background-color: var(--blanco-puro);
+  color: var(--texto-oscuro);
+}
+
+.contenido-markdown .toastui-editor-contents table ul,
+.contenido-markdown .toastui-editor-contents table ol,
+.editor-wrapper .toastui-editor-contents table ul,
+.editor-wrapper .toastui-editor-contents table ol {
+  margin: 0.25rem 0;
+  padding-left: 1.25rem;
+}
+
+.contenido-markdown .toastui-editor-contents table li,
+.editor-wrapper .toastui-editor-contents table li {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0.15rem 0;
+}
+
+.contenido-markdown .toastui-editor-contents table p,
+.editor-wrapper .toastui-editor-contents table p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.contenido-markdown img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-top: 1rem;
 }
 
 .toastui-editor-popup-add-heading li[data-level="5"],
@@ -814,18 +879,6 @@ body {
   color: red !important;
 }
 
-.contenido-markdown th,
-.contenido-markdown td {
-  border: 1px solid var(--borde-claro);
-  padding: 0.75rem;
-  text-align: left;
-}
-
-.contenido-markdown th {
-  background-color: var(--celeste-suave);
-  color: var(--azul-profundo);
-  font-weight: 600;
-}
 
 .editor-wrapper {
   background-color: var(--blanco-puro);

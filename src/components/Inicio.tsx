@@ -53,6 +53,23 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
     }
   });
 
+  const aplicarResultadoSincronizacion = (resultado: Awaited<ReturnType<typeof sincronizarDatos>>) => {
+    if (resultado.usuarioEliminado) {
+      setUsuarioLogueado(null);
+      localStorage.removeItem('usuario_hospital');
+      setMostrarLogin(false);
+      setVistaActual('inicio');
+      setMensajeSincronizacion('Tu usuario fue eliminado. La sesión se cerró.');
+      setEstadoSincronizacion('error');
+      return;
+    }
+
+    if (resultado.usuarioActualizado) {
+      setUsuarioLogueado(resultado.usuarioActualizado);
+      localStorage.setItem('usuario_hospital', JSON.stringify(resultado.usuarioActualizado));
+    }
+  };
+
   useEffect(() => {
     if (!mensajeSincronizacion) return;
 
@@ -83,7 +100,8 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
 
       setSincronizando(true);
       try {
-        await sincronizarDatos(usuarioLogueado);
+        const resultado = await sincronizarDatos(usuarioLogueado);
+        aplicarResultadoSincronizacion(resultado);
         if (mostrarResultado && activo) {
           setMensajeSincronizacion('Datos sincronizados correctamente.');
         }
@@ -174,12 +192,21 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
                         setSincronizando(true);
                         try {
                           const resultado = await sincronizarDatos(usuarioLogueado);
+                          aplicarResultadoSincronizacion(resultado);
                           setMensajeSincronizacion(
-                            resultado.huboCambios
+                            resultado.usuarioEliminado
+                              ? 'Tu usuario fue eliminado. La sesión se cerró.'
+                              : resultado.huboCambios
                               ? 'Datos sincronizados correctamente.'
                               : 'Ya estás en la última versión.'
                           );
-                          setEstadoSincronizacion(resultado.huboCambios ? 'actualizado' : 'exito');
+                          setEstadoSincronizacion(
+                            resultado.usuarioEliminado
+                              ? 'error'
+                              : resultado.huboCambios
+                                ? 'actualizado'
+                                : 'exito'
+                          );
                         } catch (error) {
                           console.error('No se pudo sincronizar manualmente:', error);
                           setMensajeSincronizacion(

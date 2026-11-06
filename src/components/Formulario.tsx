@@ -324,16 +324,38 @@ export const FormularioCreacion: React.FC<FormularioCreacionProps> = ({tipoInici
                   ['heading', 'bold', 'italic'],
                   ['hr'],
                   ['ul', 'ol'],
-                  ['table']
+                  ['table', 'image'],
                 ]}
+                // hook para la subida de imágenes
+                hooks={{
+                  addImageBlobHook: async (blob: File | Blob, callback: (url: string, altText: string) => void) => {
+                    try {
+
+                      const formData = new FormData();
+                      formData.append('file', blob);
+
+                      const response = await fetch(`${API_URL}/upload`, {
+                        method: 'POST',
+                        body: formData
+                      });
+
+                      if (!response.ok) throw new Error('Error al subir la imagen');
+
+                      const data = await response.json();
+                      
+                      // el backend devuelve la URL de Supabase y se inserta automáticamente en el texto
+                      callback(data.url, 'Imagen del protocolo');
+                    } catch (error) {
+                      console.error('Error subiendo imagen:', error);
+                      mostrarToast('No se pudo subir la imagen al servidor', 'error');
+                    }
+                  }
+                }}
+              
                 />
                 </div>
           </div>
 
-          <div className="input-group">
-            <label>Agregar Imagen</label>
-            <input type="file" accept="image/*" className="form-file-input" />
-          </div>
           
           {tipoAgregar === 'diagnostico' && (
             <div className="input-group">

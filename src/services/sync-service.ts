@@ -4,7 +4,6 @@ import { API_URL } from '../config/api';
 
 interface SyncResponse {
   nro_sync: string;
-  last_sync_at: string;
   reset: boolean;
   diagnosticos: DiagnosticoRemoto[];
   protocolos: ProtocoloRemoto[];
@@ -12,14 +11,10 @@ interface SyncResponse {
     diagnosticos: string[];
     protocolos: string[];
   };
-  usuario_actualizado: UsuarioSesion | null;
-  usuario_eliminado: boolean;
 }
 
 export interface SyncResult {
   huboCambios: boolean;
-  usuarioEliminado: boolean;
-  usuarioActualizado: UsuarioSesion | null;
 }
 
 export interface UsuarioSesion {
@@ -38,7 +33,6 @@ type DiagnosticoRemoto = DiagnosticoLocal & {
 };
 
 const SYNC_CURSOR_KEY = 'sync_cursor';
-const SYNC_LAST_SYNC_AT_KEY = 'sync_last_sync_at';
 
 const validarRespuesta = (respuesta: unknown): SyncResponse => {
   if (!respuesta || typeof respuesta !== 'object') {
@@ -48,16 +42,11 @@ const validarRespuesta = (respuesta: unknown): SyncResponse => {
   const datos = respuesta as Partial<SyncResponse>;
   if (
     typeof datos.nro_sync !== 'string' ||
-    typeof datos.last_sync_at !== 'string' ||
-    typeof datos.reset !== 'boolean' ||
     !Array.isArray(datos.diagnosticos) ||
     !Array.isArray(datos.protocolos) ||
     !datos.deleted ||
     !Array.isArray(datos.deleted.diagnosticos) ||
-    !Array.isArray(datos.deleted.protocolos) ||
-    typeof datos.usuario_eliminado !== 'boolean' ||
-    (datos.usuario_actualizado !== null &&
-      (typeof datos.usuario_actualizado !== 'object' || !datos.usuario_actualizado))
+    !Array.isArray(datos.deleted.protocolos)
   ) {
     throw new Error('La respuesta de sincronización no tiene el formato esperado');
   }
@@ -81,22 +70,14 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
   }
 
   const metadata = await higaDb.metadata.get(SYNC_CURSOR_KEY);
-  const ultimaSincronizacion = await higaDb.metadata.get(SYNC_LAST_SYNC_AT_KEY);
+  const cursor = metadata?.valor ?? '0';
   const [diagnosticosLocales, protocolosLocales] = await Promise.all([
     higaDb.diagnosticos.count(),
     higaDb.protocolos.count()
   ]);
   const necesitaCargaInicial = diagnosticosLocales === 0 || protocolosLocales === 0;
-  const cursor = necesitaCargaInicial ? '0' : metadata?.valor ?? '0';
-  const parametros = new URLSearchParams({
-    id: String(usuario.id),
-    sync: cursor
-  });
-  if (!necesitaCargaInicial && ultimaSincronizacion?.valor) {
-    parametros.set('last_sync_at', ultimaSincronizacion.valor);
-  }
   const response = await fetch(
-    `${API_URL}/sync?${parametros.toString()}`
+    `${API_URL}/sync?id=${encodeURIComponent(String(usuario.id))}&sync=${encodeURIComponent(cursor)}`
   );
 
   if (!response.ok) {
@@ -104,16 +85,29 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
   }
 
   const data = validarRespuesta(await response.json());
-  const diagnosticosRemotos = data.diagnosticos;
-  const protocolosRemotos = data.protocolos;
-  const huboCambios =
-    data.reset ||
-    data.usuario_eliminado ||
-    data.usuario_actualizado !== null ||
+  let diagnosticosRemotos = data.diagnosticos;
+  let protocolosRemotos = data.protocolos;
+  let huboCambios =
     diagnosticosRemotos.length > 0 ||
     protocolosRemotos.length > 0 ||
     data.deleted.diagnosticos.length > 0 ||
     data.deleted.protocolos.length > 0;
+
+  // El historial puede no contener los datos existentes antes de habilitar sync.
+  if (necesitaCargaInicial) {
+    const [diagnosticosResponse, protocolosResponse] = await Promise.all([
+      fetch(`${API_URL}/diagnosticos`),
+      fetch(`${API_URL}/protocolos`)
+    ]);
+
+    if (!diagnosticosResponse.ok || !protocolosResponse.ok) {
+      throw new Error('No se pudo realizar la carga inicial de datos');
+    }
+
+    diagnosticosRemotos = await diagnosticosResponse.json();
+    protocolosRemotos = await protocolosResponse.json();
+    huboCambios = diagnosticosRemotos.length > 0 || protocolosRemotos.length > 0;
+  }
 
   const diagnosticos = diagnosticosRemotos
     .map(guardarDiagnostico);
@@ -139,36 +133,20 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
     higaDb.protocolos,
     higaDb.metadata,
     async () => {
-      if (data.usuario_eliminado) {
-        await higaDb.diagnosticos.clear();
-        await higaDb.protocolos.clear();
-        await higaDb.metadata.clear();
-      } else {
-        if (data.reset) {
-          await higaDb.diagnosticos.clear();
-          await higaDb.protocolos.clear();
+      await higaDb.diagnosticos.bulkPut(diagnosticos.map(({ diagnosticoLocal }) => diagnosticoLocal));
+      await higaDb.protocolos.bulkPut(protocolos);
+
+      for (const { protocolo } of diagnosticos) {
+        if (protocolo) {
+          await higaDb.protocolos.put(protocolo);
         }
-
-        await higaDb.diagnosticos.bulkPut(diagnosticos.map(({ diagnosticoLocal }) => diagnosticoLocal));
-        await higaDb.protocolos.bulkPut(protocolos);
-
-        for (const { protocolo } of diagnosticos) {
-          if (protocolo) {
-            await higaDb.protocolos.put(protocolo);
-          }
-        }
-
-        await higaDb.protocolos.bulkDelete(data.deleted.protocolos);
-        await higaDb.diagnosticos.bulkDelete(data.deleted.diagnosticos);
-        await higaDb.metadata.put({ clave: SYNC_CURSOR_KEY, valor: data.nro_sync });
-        await higaDb.metadata.put({ clave: SYNC_LAST_SYNC_AT_KEY, valor: data.last_sync_at });
       }
+
+      await higaDb.protocolos.bulkDelete(data.deleted.protocolos);
+      await higaDb.diagnosticos.bulkDelete(data.deleted.diagnosticos);
+      await higaDb.metadata.put({ clave: SYNC_CURSOR_KEY, valor: data.nro_sync });
     }
   );
 
-  return {
-    huboCambios,
-    usuarioEliminado: data.usuario_eliminado,
-    usuarioActualizado: data.usuario_actualizado
-  };
+  return { huboCambios };
 };

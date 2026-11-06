@@ -28,6 +28,23 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,ico,png,jpg,jpeg,webp,svg,woff2}"],
         navigateFallback: "index.html",
         cleanupOutdatedCaches: true,
+        runtimeCaching: [
+          {
+            // Intercepta cualquier URL que venga de Supabase
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*$/i,
+            handler: 'CacheFirst', // Busca en memoria local primero, si no hay internet, usa la guardada
+            options: {
+              cacheName: 'supabase-images-cache',
+              expiration: {
+                maxEntries: 200, // Máximo 200 fotos en memoria
+                maxAgeSeconds: 60 * 60 * 24 * 30 // Las guarda por 30 días
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
       },
       devOptions: {
         enabled: true,

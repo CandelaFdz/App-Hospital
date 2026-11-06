@@ -18,7 +18,6 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
   onEditarDiagnostico
 }) => {
   const protocoloAsociado = protocolo?.protocolo;
-  const imagenesDiagnostico = protocolo?.imagenes ?? (protocolo?.imagen ? [protocolo.imagen] : []);
   const etiquetas: string[] = Array.isArray(protocolo?.etiquetas) ? protocolo.etiquetas : [];
   
 
@@ -61,13 +60,7 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
             <Viewer initialValue={protocolo?.desc || 'Detalle del diagnóstico no disponible'} />
           </div>
           
-          {imagenesDiagnostico.length > 0 && (
-            <div className="diagnostico-imagenes">
-              {imagenesDiagnostico.map((imagen: string, indice: number) => (
-                <img key={`${imagen}-${indice}`} src={imagen} alt={`Imagen del diagnóstico ${protocolo?.titulo}`} />
-              ))}
-            </div>
-          )}
+          
         </div>
       </details>
 
@@ -93,9 +86,7 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
       </div>
 
 
-      <div className="protocol-multi" >
-        <h3>Imagenes o cuadros van aca con un subtitulo</h3>
-      </div>
+      
     </section>
   );
 };

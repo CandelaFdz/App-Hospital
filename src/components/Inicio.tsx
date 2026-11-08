@@ -291,6 +291,7 @@ export const Inicio: React.FC<InicioProps> = ({ onNavigateToProtocols }) => {
             {vistaActual === 'leer' && (
               <VisorProtocolo
                 protocolo={protocoloSeleccionado}
+                esAdministrador={Boolean(usuarioLogueado?.is_admin)}
                 onEditarProtocolo={() => {
                   if (!usuarioLogueado?.is_admin) return;
                   setTipoFormulario('protocolo');

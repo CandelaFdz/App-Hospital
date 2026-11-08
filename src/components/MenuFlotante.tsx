@@ -18,7 +18,7 @@ export const MenuFlotante: React.FC<MenuFlotanteProps> = ({ onAbrirFormulario })
         <div className="fab-menu">
           <button className="fab-item" onClick={() => handleSeleccion('diagnostico')}>Agregar diagnóstico</button>
           <button className="fab-item" onClick={() => handleSeleccion('protocolo')}>Agregar protocolo</button>
-          <button className="fab-item" onClick={() => handleSeleccion('especialidad')}>Agregar especialidad</button>
+          <button className="fab-item" onClick={() => handleSeleccion('especialidad')}>Gestión de especialidades</button>
           <button className="fab-item" onClick={() => handleSeleccion('usuario')}>Gestión de usuarios</button>
         </div>
       )}

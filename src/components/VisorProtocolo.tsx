@@ -5,6 +5,7 @@ import '@toast-ui/editor/dist/toastui-editor-viewer.css';
 interface VisorProtocoloProps {
   protocolo: any;
   onVolver: () => void;
+  esAdministrador: boolean;
   onCrearProtocolo?: () => void;
   onEditarProtocolo?: () => void;
   onEditarDiagnostico?: () => void;
@@ -13,6 +14,7 @@ interface VisorProtocoloProps {
 export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
   protocolo,
   onVolver,
+  esAdministrador,
   onCrearProtocolo,
   onEditarProtocolo,
   onEditarDiagnostico
@@ -28,19 +30,21 @@ export const VisorProtocolo: React.FC<VisorProtocoloProps> = ({
           ⬅ Volver al inicio
         </button>
 
-        <details className="editar-menu">
-          <summary>Editar</summary>
-          <div className="editar-menu-opciones">
-            {protocoloAsociado && (
-              <button className="btn" onClick={onEditarProtocolo}>
-                Editar protocolo
+        {esAdministrador && (
+          <details className="editar-menu">
+            <summary>Editar</summary>
+            <div className="editar-menu-opciones">
+              {protocoloAsociado && (
+                <button className="btn" onClick={onEditarProtocolo}>
+                  Editar protocolo
+                </button>
+              )}
+              <button className="btn" onClick={onEditarDiagnostico}>
+                Editar diagnóstico
               </button>
-            )}
-            <button className="btn" onClick={onEditarDiagnostico}>
-              Editar diagnóstico
-            </button>
-          </div>
-        </details>
+            </div>
+          </details>
+        )}
       </div>
 
       <details className="diagnostico-detalle">

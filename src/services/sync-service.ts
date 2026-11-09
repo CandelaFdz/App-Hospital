@@ -39,6 +39,7 @@ type DiagnosticoRemoto = DiagnosticoLocal & {
 
 const SYNC_CURSOR_KEY = 'sync_cursor';
 const SYNC_LAST_SYNC_AT_KEY = 'sync_last_sync_at';
+const SYNC_USER_ID_KEY = 'sync_user_id';
 
 const validarRespuesta = (respuesta: unknown): SyncResponse => {
   if (!respuesta || typeof respuesta !== 'object') {
@@ -82,11 +83,14 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
 
   const metadata = await higaDb.metadata.get(SYNC_CURSOR_KEY);
   const ultimaSincronizacion = await higaDb.metadata.get(SYNC_LAST_SYNC_AT_KEY);
+  const usuarioSincronizado = await higaDb.metadata.get(SYNC_USER_ID_KEY);
   const [diagnosticosLocales, protocolosLocales] = await Promise.all([
     higaDb.diagnosticos.count(),
     higaDb.protocolos.count()
   ]);
-  const necesitaCargaInicial = diagnosticosLocales === 0 || protocolosLocales === 0;
+  const cambioDeUsuario = usuarioSincronizado?.valor !== String(usuario.id);
+  const necesitaCargaInicial =
+    cambioDeUsuario || diagnosticosLocales === 0 || protocolosLocales === 0;
   const cursor = necesitaCargaInicial ? '0' : metadata?.valor ?? '0';
   const parametros = new URLSearchParams({
     id: String(usuario.id),
@@ -107,6 +111,7 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
   const diagnosticosRemotos = data.diagnosticos;
   const protocolosRemotos = data.protocolos;
   const huboCambios =
+    cambioDeUsuario ||
     data.reset ||
     data.usuario_eliminado ||
     data.usuario_actualizado !== null ||
@@ -144,7 +149,7 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
         await higaDb.protocolos.clear();
         await higaDb.metadata.clear();
       } else {
-        if (data.reset) {
+        if (data.reset || cambioDeUsuario) {
           await higaDb.diagnosticos.clear();
           await higaDb.protocolos.clear();
         }
@@ -162,6 +167,7 @@ export const sincronizarDatos = async (usuario: UsuarioSesion | null): Promise<S
         await higaDb.diagnosticos.bulkDelete(data.deleted.diagnosticos);
         await higaDb.metadata.put({ clave: SYNC_CURSOR_KEY, valor: data.nro_sync });
         await higaDb.metadata.put({ clave: SYNC_LAST_SYNC_AT_KEY, valor: data.last_sync_at });
+        await higaDb.metadata.put({ clave: SYNC_USER_ID_KEY, valor: String(usuario.id) });
       }
     }
   );
